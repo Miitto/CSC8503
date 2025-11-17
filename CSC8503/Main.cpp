@@ -2,29 +2,29 @@
 
 #include "Debug.h"
 
-#include "State.h"
-#include "StateMachine.h"
-#include "StateTransition.h"
+#include "ai/state_machine/State.h"
+#include "ai/state_machine/StateMachine.h"
+#include "ai/state_machine/StateTransition.h"
 
-#include "GameClient.h"
-#include "GameServer.h"
+#include "networking/GameClient.h"
+#include "networking/GameServer.h"
 
-#include "NavigationGrid.h"
-#include "NavigationMesh.h"
+#include "ai/pathfinding/NavigationGrid.h"
+#include "ai/pathfinding/NavigationMesh.h"
 
 #include "NetworkedGame.h"
 #include "TutorialGame.h"
 
-#include "PushdownMachine.h"
+#include "ai/automata/PushdownMachine.h"
 
-#include "PushdownState.h"
+#include "ai/automata/PushdownState.h"
 
-#include "BehaviourAction.h"
-#include "BehaviourNode.h"
-#include "BehaviourSelector.h"
-#include "BehaviourSequence.h"
+#include "ai/behaviour_trees/BehaviourAction.h"
+#include "ai/behaviour_trees/BehaviourNode.h"
+#include "ai/behaviour_trees/BehaviourSelector.h"
+#include "ai/behaviour_trees/BehaviourSequence.h"
 
-#include "PhysicsSystem.h"
+#include "physics/PhysicsSystem.h"
 
 #ifdef USEOPENGL
 #include "GameTechRenderer.h"

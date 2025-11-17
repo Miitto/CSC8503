@@ -1,7 +1,7 @@
 
 #include "TiedConstraint.h"
 #include "GameObject.h"
-#include "PhysicsObject.h"
+#include "physics/PhysicsObject.h"
 
 using namespace NCL;
 using namespace Maths;

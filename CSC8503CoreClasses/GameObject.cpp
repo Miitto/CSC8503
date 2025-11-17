@@ -1,8 +1,8 @@
 #include "GameObject.h"
-#include "CollisionDetection.h"
-#include "NetworkObject.h"
-#include "PhysicsObject.h"
 #include "RenderObject.h"
+#include "collisions/CollisionDetection.h"
+#include "networking/NetworkObject.h"
+#include "physics/PhysicsObject.h"
 
 using namespace NCL::CSC8503;
 

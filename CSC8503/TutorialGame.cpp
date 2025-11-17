@@ -1,9 +1,9 @@
 #include "TutorialGame.h"
 #include "GameWorld.h"
-#include "PhysicsObject.h"
-#include "PhysicsSystem.h"
 #include "RenderObject.h"
 #include "TextureLoader.h"
+#include "physics/PhysicsObject.h"
+#include "physics/PhysicsSystem.h"
 
 #include "StateGameObject.h"
 #include "constraints/OrientationConstraint.h"
@@ -21,7 +21,7 @@
 
 #include "GameTechRendererInterface.h"
 
-#include "Ray.h"
+#include "collisions/Ray.h"
 
 using namespace NCL;
 using namespace CSC8503;

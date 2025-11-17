@@ -4,78 +4,78 @@ set(PROJECT_NAME CSC8503CoreClasses)
 # Source groups
 ################################################################################
 set(AI_Behaviour_Tree
-    "BehaviourAction.h"
-    "BehaviourNode.h"
-    "BehaviourNodeWithChildren.h"
-    "BehaviourSelector.h"
-    "BehaviourSelector.cpp"
-    "BehaviourSequence.h"
-    "BehaviourSequence.cpp"
+    "ai/behaviour_trees/BehaviourAction.h"
+    "ai/behaviour_trees/BehaviourNode.h"
+    "ai/behaviour_trees/BehaviourNodeWithChildren.h"
+    "ai/behaviour_trees/BehaviourSelector.h"
+    "ai/behaviour_trees/BehaviourSelector.cpp"
+    "ai/behaviour_trees/BehaviourSequence.h"
+    "ai/behaviour_trees/BehaviourSequence.cpp"
 )
 source_group("AI\\Behaviour Trees" FILES ${AI_Behaviour_Tree})
 
 set(AI_Pushdown_Automata
-    "PushdownMachine.h"
-    "PushdownMachine.cpp"
-    "PushdownState.h"
-    "PushdownState.cpp"
+    "ai/automata/PushdownMachine.h"
+    "ai/automata/PushdownMachine.cpp"
+    "ai/automata/PushdownState.h"
+    "ai/automata/PushdownState.cpp"
 )
 source_group("AI\\Pushdown Automata" FILES ${AI_Pushdown_Automata})
 
 set(AI_State_Machine
-    "State.h"
-    "StateMachine.h"  
-    "StateMachine.cpp"
-    "StateMachine.h"
-    "StateTransition.h"
+    "ai/state_machine/State.h"
+    "ai/state_machine/StateMachine.h"  
+    "ai/state_machine/StateMachine.cpp"
+    "ai/state_machine/StateMachine.h"
+    "ai/state_machine/StateTransition.h"
 )
 source_group("AI\\State Machine" FILES ${AI_State_Machine})
 
 set(AI_Pathfinding
-    "NavigationGrid.h"
-    "NavigationGrid.cpp"  
-    "NavigationMesh.cpp"
-    "NavigationMesh.h"
-    "NavigationMap.h"
-    "NavigationPath.h"
+    "ai/pathfinding/NavigationGrid.h"
+    "ai/pathfinding/NavigationGrid.cpp"  
+    "ai/pathfinding/NavigationMesh.cpp"
+    "ai/pathfinding/NavigationMesh.h"
+    "ai/pathfinding/NavigationMap.h"
+    "ai/pathfinding/NavigationPath.h"
 )
 source_group("AI\\Pathfinding" FILES ${AI_Pathfinding})
 
 
 set(Collision_Detection
-    "AABBVolume.h"
-    "CapsuleVolume.h"  
-    "CapsuleVolume.cpp"
-    "CollisionDetection.h"
-    "CollisionDetection.cpp"
-     "CollisionVolume.h"
-    "OBBVolume.h"
-    "QuadTree.h"
-    "QuadTree.cpp"
-    "Ray.h"
-    "SphereVolume.h"
+    "collisions/AABBVolume.h"
+    "collisions/CapsuleVolume.h"  
+    "collisions/CapsuleVolume.cpp"
+    "collisions/CollisionDetection.h"
+    "collisions/CollisionDetection.cpp"
+    "collisions/CollisionVolume.h"
+    "collisions/OBBVolume.h"
+    "collisions/QuadTree.h"
+    "collisions/QuadTree.cpp"
+    "collisions/Ray.h"
+    "collisions/SphereVolume.h"
 )
 source_group("Collision Detection" FILES ${Collision_Detection})
 
 set(Networking
-    "GameClient.h"  
-    "GameClient.cpp"
-    "GameServer.h"
-    "GameServer.cpp"
-    "NetworkBase.h"
-    "NetworkBase.cpp"
-    "NetworkObject.h"
-    "NetworkObject.cpp"
-    "NetworkState.h"
-    "NetworkState.cpp"
+    "networking/GameClient.h"  
+    "networking/GameClient.cpp"
+    "networking/GameServer.h"
+    "networking/GameServer.cpp"
+    "networking/NetworkBase.h"
+    "networking/NetworkBase.cpp"
+    "networking/NetworkObject.h"
+    "networking/NetworkObject.cpp"
+    "networking/NetworkState.h"
+    "networking/NetworkState.cpp"
 )
 source_group("Networking" FILES ${Networking})
 
 set(Physics
-    "PhysicsObject.cpp"
-    "PhysicsObject.h"
-    "PhysicsSystem.cpp"
-    "PhysicsSystem.h"
+    "physics/PhysicsObject.cpp"
+    "physics/PhysicsObject.h"
+    "physics/PhysicsSystem.cpp"
+    "physics/PhysicsSystem.h"
 )
 source_group("Physics" FILES ${Physics})
 

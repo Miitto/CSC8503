@@ -1,15 +1,16 @@
 #include "PhysicsSystem.h"
-#include "CollisionDetection.h"
 #include "GameObject.h"
 #include "PhysicsObject.h"
 #include "Quaternion.h"
+#include "collisions/CollisionDetection.h"
 
 #include "constraints/Constraint.h"
 
 #include "Debug.h"
 #include "Window.h"
-#include <QuadTree.h>
+#include <collisions/QuadTree.h>
 #include <functional>
+
 using namespace NCL;
 using namespace CSC8503;
 

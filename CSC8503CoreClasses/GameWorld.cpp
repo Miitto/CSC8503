@@ -1,14 +1,14 @@
 #include "GameWorld.h"
 #include "Camera.h"
-#include "CollisionDetection.h"
 #include "GameObject.h"
+#include "collisions/CollisionDetection.h"
 #include "constraints/Constraint.h"
 
 #include <random>
 
-#include "CollisionDetection.h"
-#include "QuadTree.h"
-#include "Ray.h"
+#include "collisions/CollisionDetection.h"
+#include "collisions/QuadTree.h"
+#include "collisions/Ray.h"
 
 using namespace NCL;
 using namespace NCL::CSC8503;
