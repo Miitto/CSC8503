@@ -72,18 +72,23 @@ set(Networking
 source_group("Networking" FILES ${Networking})
 
 set(Physics
-    "constraint.h"  
-     "constraint.h"  
-    "PositionConstraint.cpp"
-    "PositionConstraint.h"
-    "OrientationConstraint.cpp"
-    "OrientationConstraint.h"
     "PhysicsObject.cpp"
     "PhysicsObject.h"
     "PhysicsSystem.cpp"
     "PhysicsSystem.h"
 )
 source_group("Physics" FILES ${Physics})
+
+set(Constraints
+    "constraints/Constraint.h"
+    "constraints/OrientationConstraint.cpp"
+    "constraints/OrientationConstraint.h"
+    "constraints/PositionConstraint.cpp"
+    "constraints/PositionConstraint.h"
+    "constraints/TiedConstraint.cpp"
+    "constraints/TiedConstraint.h"
+)
+source_group("Physics\\Constraints" FILES ${Constraints})
 
 set(Header_Files
     "Debug.h"
@@ -135,6 +140,7 @@ set(ALL_FILES
     ${Collision_Detection}
     ${Networking}
     ${Physics}
+    ${Constraints}
     ${enet_Files}   
 )
 

@@ -5,9 +5,10 @@
 #include "RenderObject.h"
 #include "TextureLoader.h"
 
-#include "OrientationConstraint.h"
-#include "PositionConstraint.h"
 #include "StateGameObject.h"
+#include "constraints/OrientationConstraint.h"
+#include "constraints/PositionConstraint.h"
+#include "constraints/TiedConstraint.h"
 
 #include "Mesh.h"
 #include "Shader.h"
@@ -187,8 +188,11 @@ void TutorialGame::InitWorld() {
   InitGameExamples();
 
   AddFloorToWorld(Vector3(0, -20, 0));
+
+  BridgeConstraintTest();
 }
 
+#pragma region World Building Functions
 /*
 
 A single function to add a large immoveable cube to the bottom of our world
@@ -340,7 +344,9 @@ GameObject *TutorialGame::AddBonusToWorld(const Vector3 &position) {
 
   return apple;
 }
+#pragma endregion
 
+#pragma region Examples and Tests
 void TutorialGame::InitGameExamples() {
   AddPlayerToWorld(Vector3(0, 5, 0));
   AddEnemyToWorld(Vector3(5, 5, 0));
@@ -386,11 +392,40 @@ void TutorialGame::CreateAABBGrid(int numRows, int numCols, float rowSpacing,
   }
 }
 
+void TutorialGame::BridgeConstraintTest() {
+  const Vector3 cubeDims = Vector3(8, 8, 8);
+
+  constexpr float invCubeMass = 5.0f;
+  constexpr int numLinks = 10;
+  constexpr float maxDistance = 30.f;
+  constexpr float cubeDistance = 20.f;
+
+  const Vector3 startPos(300, 50, 300);
+
+  auto start = AddCubeToWorld(startPos, cubeDims, 0.0f);
+  auto end = AddCubeToWorld(
+      startPos + Vector3((numLinks + 2) * cubeDistance, 0, 0), cubeDims, 0.0f);
+
+  auto prev = start;
+
+  for (int i = 0; i < numLinks; ++i) {
+    auto link = AddCubeToWorld(startPos + Vector3((i + 1) * cubeDistance, 0, 0),
+                               cubeDims, invCubeMass);
+    auto constraint = new TiedConstraint(prev, link, maxDistance);
+    world.AddConstraint(constraint);
+    prev = link;
+  }
+
+  auto constraint = new TiedConstraint(prev, end, maxDistance);
+  world.AddConstraint(constraint);
+}
+#pragma endregion
+
 /*
 Every frame, this code will let you perform a raycast, to see if there's an
 object underneath the cursor, and if so 'select it' into a pointer, so that it
-can be manipulated later. Pressing Q will let you toggle between this behaviour
-and instead letting you move the camera around.
+can be manipulated later. Pressing Q will let you toggle between this
+behaviour and instead letting you move the camera around.
 
 */
 bool TutorialGame::SelectObject() {
@@ -404,6 +439,13 @@ bool TutorialGame::SelectObject() {
       Window::GetWindow()->LockMouseToWindow(true);
     }
   }
+
+  Debug::Print(
+      "Camera Pos:" + std::to_string(world.GetMainCamera().GetPosition().x) +
+          "," + std::to_string(world.GetMainCamera().GetPosition().y) + "," +
+          std::to_string(world.GetMainCamera().GetPosition().z),
+      Vector2(5, 5), Debug::WHITE);
+
   if (inSelectionMode) {
     Debug::Print("Press Q to change to camera mode!", Vector2(5, 85));
 
@@ -441,11 +483,11 @@ bool TutorialGame::SelectObject() {
 }
 
 /*
-If an object has been clicked, it can be pushed with the right mouse button, by
-an amount determined by the scroll wheel. In the first tutorial this won't do
-anything, as we haven't added linear motion into our physics system. After the
-second tutorial, objects will move in a straight line - after the third, they'll
-be able to twist under torque aswell.
+If an object has been clicked, it can be pushed with the right mouse button,
+by an amount determined by the scroll wheel. In the first tutorial this won't
+do anything, as we haven't added linear motion into our physics system. After
+the second tutorial, objects will move in a straight line - after the third,
+they'll be able to twist under torque aswell.
 */
 
 void TutorialGame::MoveSelectedObject() {

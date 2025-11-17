@@ -4,17 +4,17 @@
 #include "PhysicsObject.h"
 #include "Quaternion.h"
 
-#include "Constraint.h"
+#include "constraints/Constraint.h"
 
 #include "Debug.h"
 #include "Window.h"
+#include <QuadTree.h>
 #include <functional>
 using namespace NCL;
 using namespace CSC8503;
 
 PhysicsSystem::PhysicsSystem(GameWorld &g) : gameWorld(g) {
   applyGravity = false;
-  useBroadPhase = false;
   dTOffset = 0.0f;
   globalDamping = 0.995f;
   SetGravity(Vector3(0.0f, -9.8f, 0.0f));
@@ -89,6 +89,7 @@ void PhysicsSystem::Update(float dt) {
   if (useBroadPhase) {
     UpdateObjectAABBs();
   }
+
   int iteratorCount = 0;
   while (dTOffset > realDT) {
     IntegrateAccel(realDT); // Update accelerations from external forces
@@ -202,8 +203,8 @@ void PhysicsSystem::BasicCollisionDetection() {
 
       CollisionDetection::CollisionInfo cInfo;
       if (CollisionDetection::ObjectIntersection(*it, *jt, cInfo)) {
-        ImpulseResolveCollision(*cInfo.a, *cInfo.b, cInfo.point);
         cInfo.framesLeft = numCollisionFrames;
+        ImpulseResolveCollision(*cInfo.a, *cInfo.b, cInfo.point);
         allCollisions.insert(cInfo);
       }
     }
@@ -277,7 +278,30 @@ split the world up using an acceleration structure, so that we can only
 compare the collisions that we absolutely need to.
 
 */
-void PhysicsSystem::BroadPhase() {}
+void PhysicsSystem::BroadPhase() {
+  broadphaseCollisions.clear();
+  QuadTree<GameObject *> tree(Vector2(1024, 1024), 7, 6);
+
+  for (auto i : gameWorld) {
+    Vector3 size;
+    if (!i->GetBroadphaseAABB(size))
+      return;
+
+    auto pos = i->GetTransform().GetPosition();
+    tree.Insert(i, pos, size);
+  }
+
+  tree.OperateOnContents([&](auto &objects) {
+    CollisionDetection::CollisionInfo cInfo;
+    for (auto it = objects.begin(); it != objects.end(); ++it) {
+      for (auto jt = std::next(it); jt != objects.end(); ++jt) {
+        cInfo.a = std::min(it->object, jt->object);
+        cInfo.b = std::max(it->object, jt->object);
+        broadphaseCollisions.insert(cInfo);
+      }
+    }
+  });
+}
 
 /*
 
@@ -285,7 +309,15 @@ The broadphase will now only give us likely collisions, so we can now go through
 them, and work out if they are truly colliding, and if so, add them into the
 main collision list
 */
-void PhysicsSystem::NarrowPhase() {}
+void PhysicsSystem::NarrowPhase() {
+  for (auto cInfo : broadphaseCollisions) {
+    if (CollisionDetection::ObjectIntersection(cInfo.a, cInfo.b, cInfo)) {
+      cInfo.framesLeft = numCollisionFrames;
+      ImpulseResolveCollision(*cInfo.a, *cInfo.b, cInfo.point);
+      allCollisions.insert(cInfo);
+    }
+  }
+}
 
 /*
 Integration of acceleration and velocity is split up, so that we can
