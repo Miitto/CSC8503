@@ -189,7 +189,25 @@ to the collision set for later processing. The set will guarantee that
 a particular pair will only be added once, so objects colliding for
 multiple frames won't flood the set with duplicates.
 */
-void PhysicsSystem::BasicCollisionDetection() {}
+void PhysicsSystem::BasicCollisionDetection() {
+  for (auto it = gameWorld.begin(); it != gameWorld.end(); ++it) {
+    if (!(*it)->GetPhysicsObject()) {
+      continue;
+    }
+
+    for (auto jt = std::next(it); jt != gameWorld.end(); ++jt) {
+      if (!(*jt)->GetPhysicsObject()) {
+        continue;
+      }
+
+      CollisionDetection::CollisionInfo cInfo;
+      if (CollisionDetection::ObjectIntersection(*it, *jt, cInfo)) {
+        cInfo.framesLeft = numCollisionFrames;
+        allCollisions.insert(cInfo);
+      }
+    }
+  }
+}
 
 /*
 
@@ -248,6 +266,17 @@ void PhysicsSystem::IntegrateAccel(float dt) {
 
     v += a * dt;
     obj.SetLinearVelocity(v);
+
+    auto torque = obj.GetTorque();
+    auto w = obj.GetAngularVelocity();
+
+    obj.UpdateInertiaTensor();
+
+    auto alpha = obj.GetInertiaTensor() * torque;
+
+    w += alpha * dt;
+
+    obj.SetAngularVelocity(w);
   }
 }
 
@@ -278,6 +307,18 @@ void PhysicsSystem::IntegrateVelocity(float dt) {
 
     v *= frameLinearDamping;
     obj.SetLinearVelocity(v);
+
+    auto rot = transform.GetOrientation();
+    auto w = obj.GetAngularVelocity();
+
+    rot += Quaternion(w * dt * 0.5f, 0.0f) * rot;
+    rot.Normalise();
+
+    transform.SetOrientation(rot);
+
+    const float frameAngularDamping = 1.0f - (0.4f * dt);
+    w *= frameAngularDamping;
+    obj.SetAngularVelocity(w);
   }
 }
 
