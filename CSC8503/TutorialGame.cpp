@@ -173,8 +173,26 @@ void TutorialGame::DebugUi() {
   if (useGravity) {
     ImGui::InputFloat3("Gravity", &physics.GetGravity().x);
   }
-
   ImGui::End();
+
+  if (selectionObject) {
+    ImGui::Begin("Selected Object");
+    Vector3 pos = selectionObject->GetTransform().GetPosition();
+    if (ImGui::InputFloat3("P", &pos.x)) {
+      selectionObject->GetTransform().SetPosition(pos);
+      selectionObject->GetPhysicsObject()->SetLinearVelocity(Vector3());
+      selectionObject->GetPhysicsObject()->SetAngularVelocity(Vector3());
+    }
+    Vector3 vel = selectionObject->GetPhysicsObject()->GetLinearVelocity();
+    if (ImGui::InputFloat3("V", &vel.x)) {
+      selectionObject->GetPhysicsObject()->SetLinearVelocity(vel);
+    }
+    Vector3 angVel = selectionObject->GetPhysicsObject()->GetAngularVelocity();
+    if (ImGui::InputFloat3("W", &angVel.x)) {
+      selectionObject->GetPhysicsObject()->SetAngularVelocity(angVel);
+    }
+    ImGui::End();
+  }
 }
 
 void TutorialGame::InitCamera() {
