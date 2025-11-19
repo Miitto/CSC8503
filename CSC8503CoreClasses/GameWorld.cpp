@@ -118,6 +118,24 @@ bool GameWorld::Raycast(Ray &r, RayCollision &closestCollision,
   return false;
 }
 
+GameWorld::LookingAt GameWorld::ObjectLookAt(GameObject *object) const {
+
+  Vector3 rayPos = object->GetTransform().GetPosition();
+  Vector3 rayDir = object->GetTransform().GetOrientation() * Vector3(0, 0, -1);
+
+  Ray r = Ray(rayPos, rayDir);
+  RayCollision collision;
+
+  if (Raycast(r, collision, true, object)) {
+    LookingAt lookingAt;
+    lookingAt.object = (GameObject *)collision.node;
+    lookingAt.collision = collision;
+    return lookingAt;
+  }
+
+  return {nullptr, RayCollision()};
+}
+
 /*
 Constraint Tutorial Stuff
 */

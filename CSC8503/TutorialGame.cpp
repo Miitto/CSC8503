@@ -133,23 +133,13 @@ void TutorialGame::UpdateGame(float dt) {
     DebugObjectMovement();
   }
 
-  RayCollision closestCollision;
   if (Window::GetKeyboard()->KeyPressed(KeyCodes::K) && selectionObject) {
-    Vector3 rayPos;
-    Vector3 rayDir;
-
-    rayDir =
-        selectionObject->GetTransform().GetOrientation() * Vector3(0, 0, -1);
-
-    rayPos = selectionObject->GetTransform().GetPosition();
-
-    Ray r = Ray(rayPos, rayDir);
-
-    if (world.Raycast(r, closestCollision, true, selectionObject)) {
+    auto obj = world.ObjectLookAt(selectionObject);
+    if (obj) {
       if (objClosest) {
         objClosest->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
       }
-      objClosest = (GameObject *)closestCollision.node;
+      objClosest = obj.object;
 
       objClosest->GetRenderObject()->SetColour(Vector4(1, 0, 1, 1));
     }

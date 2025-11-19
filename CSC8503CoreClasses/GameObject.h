@@ -1,6 +1,7 @@
 #pragma once
 #include "Transform.h"
 #include "collisions/CollisionVolume.h"
+#include "macros.h"
 
 using std::vector;
 
@@ -11,6 +12,15 @@ class PhysicsObject;
 
 class GameObject {
 public:
+  enum Tag {
+    Player = BIT(1),
+    Inactive = BIT(2),
+  };
+
+  enum Layer {
+    RaycastIgnore = BIT(1),
+  };
+
   GameObject(const std::string &name = "");
   ~GameObject();
 
@@ -18,7 +28,13 @@ public:
 
   const CollisionVolume *GetBoundingVolume() const { return boundingVolume; }
 
-  bool IsActive() const { return isActive; }
+  bool IsActive() const { return !(tags & Tag::Inactive); }
+
+  const Tag &GetTags() const { return tags; }
+  Tag &GetTags() { return tags; }
+
+  const Layer &GetLayers() const { return layers; }
+  Layer &GetLayers() { return layers; }
 
   Transform &GetTransform() { return transform; }
 
@@ -60,7 +76,9 @@ protected:
   RenderObject *renderObject;
   NetworkObject *networkObject;
 
-  bool isActive;
+  Tag tags;
+  Layer layers;
+
   int worldID;
   std::string name;
 

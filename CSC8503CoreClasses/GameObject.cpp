@@ -6,15 +6,9 @@
 
 using namespace NCL::CSC8503;
 
-GameObject::GameObject(const std::string &objectName) {
-  name = objectName;
-  worldID = -1;
-  isActive = true;
-  boundingVolume = nullptr;
-  physicsObject = nullptr;
-  renderObject = nullptr;
-  networkObject = nullptr;
-}
+GameObject::GameObject(const std::string &objectName)
+    : name(objectName), worldID(-1), boundingVolume(nullptr),
+      physicsObject(nullptr), renderObject(nullptr), networkObject(nullptr) {}
 
 GameObject::~GameObject() {
   delete boundingVolume;

@@ -1,10 +1,10 @@
 #pragma once
 #include "./Camera.h"
+#include "collisions/Ray.h"
 
 namespace NCL {
 namespace Maths {
 class Ray;
-struct RayCollision;
 } // namespace Maths
 class Camera;
 class PerspectiveCamera;
@@ -38,6 +38,15 @@ public:
 
   bool Raycast(Ray &r, RayCollision &closestCollision,
                bool closestObject = false, GameObject *ignore = nullptr) const;
+
+  struct LookingAt {
+    GameObject *object;
+    RayCollision collision;
+
+    operator bool() const { return object != nullptr; }
+  };
+
+  LookingAt ObjectLookAt(GameObject *object) const;
 
   virtual void UpdateWorld(float dt);
 

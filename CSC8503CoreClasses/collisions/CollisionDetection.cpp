@@ -32,6 +32,10 @@ bool CollisionDetection::RayIntersection(const Ray &r, GameObject &object,
                                          RayCollision &collision) {
   bool hasCollided = false;
 
+  if (object.GetLayers() & GameObject::Layer::RaycastIgnore) {
+    return false;
+  }
+
   const Transform &worldTransform = object.GetTransform();
   const CollisionVolume *volume = object.GetBoundingVolume();
 
