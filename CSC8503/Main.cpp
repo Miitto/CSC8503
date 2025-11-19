@@ -107,6 +107,8 @@ int main() {
 
     w->SetTitle("Gametech frame time:" + std::to_string(1000.0f * dt));
 
+    renderer->StartFrame();
+
     g->UpdateGame(dt);
 
     world->UpdateWorld(dt);

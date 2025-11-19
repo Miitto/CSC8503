@@ -136,3 +136,5 @@ if(MSVC)
         ${DEFAULT_CXX_EXCEPTION_HANDLING};
     )
 endif()
+
+target_link_libraries(${PROJECT_NAME} PUBLIC imgui::imgui)

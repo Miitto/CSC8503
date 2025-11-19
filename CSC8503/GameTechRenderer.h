@@ -1,93 +1,90 @@
 #pragma once
-#include "OGLRenderer.h"
 #include "GameTechRendererInterface.h"
+#include "OGLRenderer.h"
 
 #include "OGLShader.h"
 
 namespace NCL {
-	namespace Rendering {
-		class OGLMesh;
-		class OGLShader;
-		class OGLTexture;
-		class OGLBuffer;
-	};
-	namespace CSC8503 {
-		class RenderObject;
-		class GameWorld;
+namespace Rendering {
+class OGLMesh;
+class OGLShader;
+class OGLTexture;
+class OGLBuffer;
+}; // namespace Rendering
+namespace CSC8503 {
+class RenderObject;
+class GameWorld;
 
-		class GameTechRenderer : 
-			public OGLRenderer,
-			public NCL::CSC8503::GameTechRendererInterface	
-		{
-		public:
-			GameTechRenderer(GameWorld& world);
-			~GameTechRenderer();
+class GameTechRenderer : public OGLRenderer,
+                         public NCL::CSC8503::GameTechRendererInterface {
+public:
+  GameTechRenderer(GameWorld &world);
+  ~GameTechRenderer();
 
-			Mesh*		LoadMesh(const std::string& name)									override;
-			Texture*	LoadTexture(const std::string& name)								override;
-	
-		protected:
-			struct ObjectSortState {
-				const RenderObject* object;
-				float distanceFromCamera;
-			};
+  Mesh *LoadMesh(const std::string &name) override;
+  Texture *LoadTexture(const std::string &name) override;
 
-			void RenderLines();
-			void RenderText();
-			void RenderTextures();
+protected:
+  struct ObjectSortState {
+    const RenderObject *object;
+    float distanceFromCamera;
+  };
 
-			void RenderFrame()	override;
+  void RenderLines();
+  void RenderText();
+  void RenderTextures();
 
-			void BuildObjectLists();
+  void RenderFrame() override;
 
-			void RenderSkyboxPass();
-			void RenderOpaquePass(std::vector<ObjectSortState>& list);
-			void RenderTransparentPass(std::vector<ObjectSortState>& list);
-			void RenderShadowMapPass(std::vector<ObjectSortState>& list);
+  void BuildObjectLists();
 
-			void LoadSkybox();
+  void RenderSkyboxPass();
+  void RenderOpaquePass(std::vector<ObjectSortState> &list);
+  void RenderTransparentPass(std::vector<ObjectSortState> &list);
+  void RenderShadowMapPass(std::vector<ObjectSortState> &list);
 
-			void SetDebugStringBufferSizes(size_t newVertCount);
-			void SetDebugLineBufferSizes(size_t newVertCount);
+  void LoadSkybox();
 
-			std::vector<ObjectSortState> opaqueObjects;
-			std::vector<ObjectSortState> transparentObjects;
+  void SetDebugStringBufferSizes(size_t newVertCount);
+  void SetDebugLineBufferSizes(size_t newVertCount);
 
-			GameWorld&	gameWorld;
+  std::vector<ObjectSortState> opaqueObjects;
+  std::vector<ObjectSortState> transparentObjects;
 
-			OGLShader*	defaultShader;
+  GameWorld &gameWorld;
 
-			//Skybox pass data
-			OGLShader*  skyboxShader;
-			OGLMesh*	skyboxMesh;
-			GLuint		skyboxTex;
+  OGLShader *defaultShader;
 
-			//shadow map pass data
-			OGLShader*	shadowShader;
-			GLuint		shadowTex;
-			GLuint		shadowFBO;
-			Matrix4     shadowMatrix;
+  // Skybox pass data
+  OGLShader *skyboxShader;
+  OGLMesh *skyboxMesh;
+  GLuint skyboxTex;
 
-			//Debug data
-			OGLShader*  debugShader;
-			OGLMesh*	debugTexMesh;
+  // shadow map pass data
+  OGLShader *shadowShader;
+  GLuint shadowTex;
+  GLuint shadowFBO;
+  Matrix4 shadowMatrix;
 
-			std::vector<Vector3> debugLineData;
+  // Debug data
+  OGLShader *debugShader;
+  OGLMesh *debugTexMesh;
 
-			std::vector<Vector3> debugTextPos;
-			std::vector<Vector4> debugTextColours;
-			std::vector<Vector2> debugTextUVs;
+  std::vector<Vector3> debugLineData;
 
-			GLuint lineVAO;
-			GLuint lineVertVBO;
-			size_t lineCount;
+  std::vector<Vector3> debugTextPos;
+  std::vector<Vector4> debugTextColours;
+  std::vector<Vector2> debugTextUVs;
 
-			GLuint textVAO;
-			GLuint textVertVBO;
-			GLuint textColourVBO;
-			GLuint textTexVBO;
-			size_t textCount;
-		};
-	}
-}
+  GLuint lineVAO;
+  GLuint lineVertVBO;
+  size_t lineCount;
 
+  GLuint textVAO;
+  GLuint textVertVBO;
+  GLuint textColourVBO;
+  GLuint textTexVBO;
+  size_t textCount;
+};
+} // namespace CSC8503
+} // namespace NCL

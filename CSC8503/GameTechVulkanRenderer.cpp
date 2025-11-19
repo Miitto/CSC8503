@@ -30,6 +30,8 @@ const int _TEXCOUNT = 128;
 const size_t _LINE_STRIDE = sizeof(Vector4) + sizeof(Vector4);
 const size_t _TEXT_STRIDE = sizeof(Vector2) + sizeof(Vector4) + sizeof(Vector2);
 
+const size_t _TEXTURE_INSTANCE_STRIDE	= sizeof(Vector2) + sizeof(Vector4) + sizeof(int32_t);
+
 static vk::PhysicalDeviceRobustness2FeaturesEXT robustness{
 	.nullDescriptor = true
 };
@@ -52,6 +54,7 @@ static vk::PhysicalDeviceScalarBlockLayoutFeatures scalarFeatures{
 
 static VulkanInitialisation vkInitState = {
 	.depthStencilFormat = vk::Format::eD32SfloatS8Uint,
+	.idealPresentMode	= vk::PresentModeKHR::eMailbox,
 
 	.majorVersion	= 1,
 	.minorVersion	= 3,
@@ -309,6 +312,49 @@ void GameTechVulkanRenderer::BuildDebugPipelines() {
 			.WithColourAttachment(context.colourFormat)
 			.WithDepthAttachment(context.depthFormat)
 			.Build("Debug Text Pipeline");
+	}
+
+	{
+		vk::VertexInputAttributeDescription debugTextureVertAttribs[] = {
+			//Shader input, binding, format, offset
+			{0,0,vk::Format::eR32G32B32Sfloat	, 0},
+			{1,1,vk::Format::eR32G32Sfloat		, 0},
+
+			{2,2,vk::Format::eR32G32Sfloat		, 0},
+			{3,3,vk::Format::eR32G32Sfloat		, 0},
+			{4,4,vk::Format::eR32G32B32A32Sfloat, 0},
+			{5,5,vk::Format::eR32Uint			, 0},
+		};
+
+		vk::VertexInputBindingDescription debugTextureVertBindings[std::size(debugTextureVertAttribs)] = {
+			//Binding, stride, input rate
+			{0, sizeof(Vector3), vk::VertexInputRate::eVertex},//Positions
+			{1, sizeof(Vector2), vk::VertexInputRate::eVertex},//Tex coords
+
+			{2, _TEXTURE_INSTANCE_STRIDE, vk::VertexInputRate::eInstance},//Instance Position
+			{3, _TEXTURE_INSTANCE_STRIDE, vk::VertexInputRate::eInstance},//Instance Size
+			{4, _TEXTURE_INSTANCE_STRIDE, vk::VertexInputRate::eInstance},//Instance Colour
+			{5, _TEXTURE_INSTANCE_STRIDE, vk::VertexInputRate::eInstance},//Instance Colour
+		};
+
+		vk::PipelineVertexInputStateCreateInfo textureVertexState{
+			.vertexBindingDescriptionCount		= std::size(debugTextureVertBindings),
+			.pVertexBindingDescriptions			= debugTextureVertBindings,
+
+			.vertexAttributeDescriptionCount	= std::size(debugTextureVertAttribs),
+			.pVertexAttributeDescriptions		= debugTextureVertAttribs
+		};
+
+		debugTexturePipeline = PipelineBuilder(context.device)
+			.WithVertexInputState(textureVertexState)
+			.WithTopology(quadMesh->GetVulkanTopology())
+
+			.WithShaderBinary("DebugTexture.vert.spv", vk::ShaderStageFlagBits::eVertex)
+			.WithShaderBinary("DebugTexture.frag.spv", vk::ShaderStageFlagBits::eFragment)
+
+			.WithColourAttachment(context.colourFormat)
+			.WithDepthAttachment(context.depthFormat)
+			.Build("Debug Texture Pipeline");
 	}
 }
 
@@ -569,9 +615,11 @@ void GameTechVulkanRenderer::RenderSkybox(vk::CommandBuffer cmds) {
 void GameTechVulkanRenderer::UpdateDebugData() {
 	const std::vector<Debug::DebugStringEntry>& strings = Debug::GetDebugStrings();
 	const std::vector<Debug::DebugLineEntry>&   lines	= Debug::GetDebugLines();
+	const std::vector<Debug::DebugTexEntry>&	tex		= Debug::GetDebugTex();
 
-	currentFrame->textVertCount = 0;
-	currentFrame->lineVertCount = 0;
+	currentFrame->textVertCount		= 0;
+	currentFrame->lineVertCount		= 0;
+	currentFrame->textureDrawCount	= tex.size();
 
 	for (const auto& s : strings) {
 		currentFrame->textVertCount += Debug::GetDebugFont()->GetVertexCountForString(s.data);
@@ -595,11 +643,23 @@ void GameTechVulkanRenderer::UpdateDebugData() {
 		currentFrame->bytesWritten += count;
 		verts.clear();
 	}
+
+	currentFrame->debugTextureOffset = currentFrame->bytesWritten;
+
+	for (const auto& t : tex) {
+		currentFrame->WriteData<Vector2>(t.position);
+		currentFrame->WriteData<Vector2>(t.scale);
+		currentFrame->WriteData<Vector4>(t.colour);
+
+		currentFrame->WriteData<uint32_t>(t.t->GetAssetID());
+	}
 }
 
 void GameTechVulkanRenderer::RenderDebugLines(vk::CommandBuffer cmds) {
 	if (currentFrame->lineVertCount == 0) { return; }
 	cmds.bindPipeline(vk::PipelineBindPoint::eGraphics, *debugLinePipeline.pipeline);
+
+	ScopedDebugArea scope(cmds, "Debug Lines");
 
 	vk::DescriptorSet sets[2] = {
 		*currentFrame->dataDescriptorSet,
@@ -625,6 +685,8 @@ void GameTechVulkanRenderer::RenderDebugText(vk::CommandBuffer cmds) {
 	if (currentFrame->textVertCount == 0) { return; }
 	cmds.bindPipeline(vk::PipelineBindPoint::eGraphics, *debugTextPipeline.pipeline);
 
+	ScopedDebugArea scope(cmds, "Debug Text");
+
 	vk::DescriptorSet sets[2] = {
 		*currentFrame->dataDescriptorSet,
 		*objectTextureDescriptorSet
@@ -648,6 +710,66 @@ void GameTechVulkanRenderer::RenderDebugText(vk::CommandBuffer cmds) {
 
 	cmds.bindVertexBuffers(0, std::size(attributeBuffers), attributeBuffers, attributeOffsets);	//Interleaved vertex buffer draw
 	cmds.draw((uint32_t)currentFrame->textVertCount, 1, 0, 0);
+}
+
+void GameTechVulkanRenderer::RenderDebugTextures(vk::CommandBuffer cmds) {
+	if (currentFrame->textureDrawCount == 0) { return; }
+	cmds.bindPipeline(vk::PipelineBindPoint::eGraphics, *debugTexturePipeline.pipeline);
+
+	ScopedDebugArea scope(cmds, "Debug Textures");
+
+	vk::DescriptorSet sets[2] = {
+	*currentFrame->dataDescriptorSet,
+	*objectTextureDescriptorSet
+	};
+	cmds.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *debugTexturePipeline.layout, 0, (uint32_t)std::size(sets), sets, 0, nullptr);
+
+	vk::Buffer attributeBuffers[] = {
+		nullptr,	//Positions
+		nullptr,	//Tex Coords
+
+		currentFrame->dataBuffer.buffer,	//Instance Position
+		currentFrame->dataBuffer.buffer,	//Instance Scale
+		currentFrame->dataBuffer.buffer,		//Instance Colour
+		currentFrame->dataBuffer.buffer		//Instance Texture
+	};
+
+	vk::DeviceSize attributeOffsets[std::size(attributeBuffers)] = {
+		0,
+		0,
+
+		//Instance Offsets
+		currentFrame->debugTextureOffset,
+		currentFrame->debugTextureOffset + sizeof(Vector2), //jump over position
+		currentFrame->debugTextureOffset + sizeof(Vector2) + sizeof(Vector2), //jump over position and scale
+
+		currentFrame->debugTextureOffset + sizeof(Vector2) + sizeof(Vector2) + sizeof(Vector4) //jump over position, scale, colour
+	};
+
+	vk::Buffer	vBuffer[2];
+	uint32_t	vOffset[2];
+	uint32_t	vRange[2];
+	vk::Format	vFormat[2];
+	quadMesh->GetAttributeInformation(NCL::VertexAttribute::Positions	 , vBuffer[0], vOffset[0], vRange[0], vFormat[0]);
+	quadMesh->GetAttributeInformation(NCL::VertexAttribute::TextureCoords, vBuffer[1], vOffset[1], vRange[1], vFormat[1]);
+
+	attributeBuffers[0] = vBuffer[0];
+	attributeBuffers[1] = vBuffer[1];
+
+	attributeOffsets[0] = vOffset[0];
+	attributeOffsets[1] = vOffset[1];
+
+	cmds.bindVertexBuffers(0, std::size(attributeBuffers), attributeBuffers, attributeOffsets);	//Interleaved vertex buffer draw
+
+	vk::Buffer		iBuffer;
+	uint32_t		iOffset;
+	uint32_t		iRange;
+	vk::IndexType	iFormat;
+	quadMesh->GetIndexInformation(iBuffer, iOffset, iRange, iFormat);
+
+	cmds.bindIndexBuffer(iBuffer, iOffset, iFormat);
+
+	cmds.drawIndexed((uint32_t)quadMesh->GetIndexCount(), currentFrame->textureDrawCount, 0, 0, 0);
 }
 
 Mesh* GameTechVulkanRenderer::LoadMesh(const string& name) {

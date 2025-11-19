@@ -65,18 +65,20 @@ namespace NCL {
 				vk::UniqueFence fence;
 
 				Vulkan::VulkanBuffer	dataBuffer;
-				char* dataStart;	//Start of our buffer
-				char* data;		//We're bumping this along as we write data
+				char* dataStart;					//Start of our buffer
+				char* data;							//We're bumping this along as we write data
 
-				size_t globalDataOffset = 0;	//Where does the global data start in the buffer?
-				size_t objectStateOffset = 0;	//Where does the object states start?
-				size_t debugLinesOffset = 0;	//Where do the debug lines start?
-				size_t debugTextOffset = 0;	//Where do the debug text verts start?
+				size_t globalDataOffset		= 0;	//Where does the global data start in the buffer?
+				size_t objectStateOffset	= 0;	//Where does the object states start?
+				size_t debugLinesOffset		= 0;	//Where do the debug lines start?
+				size_t debugTextOffset		= 0;	//Where do the debug text verts start?
+				size_t debugTextureOffset	= 0;	
 
-				size_t	bytesWritten = 0;
+				size_t bytesWritten			= 0;
 
-				size_t lineVertCount = 0;
-				size_t textVertCount = 0;
+				size_t lineVertCount		= 0;
+				size_t textVertCount		= 0;
+				size_t textureDrawCount		= 0;
 
 				vk::UniqueDescriptorSet dataDescriptorSet;
 
@@ -145,6 +147,7 @@ namespace NCL {
 			VulkanPipeline	scenePipeline;
 			VulkanPipeline	debugLinePipeline;
 			VulkanPipeline	debugTextPipeline;
+			VulkanPipeline	debugTexturePipeline;
 
 			Vulkan::UniqueVulkanMesh	quadMesh;
 			Vulkan::UniqueVulkanTexture	cubeTex;

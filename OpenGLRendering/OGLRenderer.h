@@ -16,59 +16,61 @@ License: MIT (see LICENSE file at the top of the source tree)
 #define OPENGL_DEBUGGING
 #endif
 
-namespace NCL::Rendering {	
-	class Mesh;
-	class Shader;
-	class Texture;
+namespace NCL::Rendering {
+class Mesh;
+class Shader;
+class Texture;
 
-	class OGLMesh;
-	class OGLShader;
-	class OGLTexture;
-	class OGLBuffer;
+class OGLMesh;
+class OGLShader;
+class OGLTexture;
+class OGLBuffer;
 
-	class SimpleFont;
+class SimpleFont;
 
-	struct OGLDebugScope {
-		OGLDebugScope(const std::string& scope);
-		~OGLDebugScope();
-	};
-		
-	class OGLRenderer : public RendererBase	{
-	public:
-		friend class OGLRenderer;
-		OGLRenderer(Window& w);
-		~OGLRenderer();
+struct OGLDebugScope {
+  OGLDebugScope(const std::string &scope);
+  ~OGLDebugScope();
+};
 
-		void OnWindowResize(int w, int h)	override;
-		bool HasInitialised()				const override {
-			return initState;
-		}
+class OGLRenderer : public RendererBase {
+public:
+  friend class OGLRenderer;
+  OGLRenderer(Window &w);
+  ~OGLRenderer();
 
-		virtual bool SetVerticalSync(VerticalSyncState s);
+  void OnWindowResize(int w, int h) override;
+  bool HasInitialised() const override { return initState; }
 
-	protected:			
-		void BeginFrame()	override;
-		void RenderFrame()	override;
-		void EndFrame()		override;
-		void SwapBuffers()  override;
+  virtual bool SetVerticalSync(VerticalSyncState s);
 
-		void UseShader(const OGLShader& s);
-		void BindTextureToShader(const OGLTexture& t, const std::string& uniform, int texUnit) const;
-		void BindMesh(const OGLMesh& m);
-		void BindBufferAsUBO(const OGLBuffer& b, uint32_t slotID);
-		void BindBufferAsSSBO(const OGLBuffer& b, uint32_t slotID);
+  void StartFrame() override;
 
-		void DrawBoundMesh(int subLayer = 0, int numInstances = 1);
+protected:
+  void BeginFrame() override;
+  void RenderFrame() override;
+  void EndFrame() override;
+  void SwapBuffers() override;
+
+  void UseShader(const OGLShader &s);
+  void BindTextureToShader(const OGLTexture &t, const std::string &uniform,
+                           int texUnit) const;
+  void BindMesh(const OGLMesh &m);
+  void BindBufferAsUBO(const OGLBuffer &b, uint32_t slotID);
+  void BindBufferAsSSBO(const OGLBuffer &b, uint32_t slotID);
+
+  void DrawBoundMesh(int subLayer = 0, int numInstances = 1);
 #ifdef _WIN32
-		void InitWithWin32(Window& w);
-		void DestroyWithWin32();
-		HDC		deviceContext;		//...Device context?
-		HGLRC	renderContext;		//Permanent Rendering Context		
+  void InitWithWin32(Window &w);
+  void DestroyWithWin32();
+  HDC deviceContext;   //...Device context?
+  HGLRC renderContext; // Permanent Rendering Context
 #endif
 
-		const OGLMesh*		boundMesh;
-		const OGLShader*	activeShader;
-	private:
-		bool initState;
-	};
-}
+  const OGLMesh *boundMesh;
+  const OGLShader *activeShader;
+
+private:
+  bool initState;
+};
+} // namespace NCL::Rendering

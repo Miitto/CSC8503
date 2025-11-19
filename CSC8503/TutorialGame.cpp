@@ -23,6 +23,8 @@
 
 #include "collisions/Ray.h"
 
+#include <imgui/imgui.h>
+
 using namespace NCL;
 using namespace CSC8503;
 
@@ -148,6 +150,7 @@ void TutorialGame::UpdateGame(float dt) {
   // This year we can draw debug textures as well!
   Debug::DrawTex(*defaultTex, Vector2(10, 10), Vector2(5, 5), Debug::WHITE);
   Debug::DrawLine(Vector3(), Vector3(0, 100, 0), Vector4(1, 0, 0, 1));
+
   if (useGravity) {
     Debug::Print("(G)ravity on", Vector2(5, 95), Debug::RED);
   } else {
@@ -157,7 +160,21 @@ void TutorialGame::UpdateGame(float dt) {
   SelectObject();
   MoveSelectedObject();
 
+  DebugUi();
+
   world.OperateOnContents([dt](GameObject *o) { o->Update(dt); });
+}
+
+void TutorialGame::DebugUi() {
+  ImGui::Begin("Tutorial Game Debug");
+  if (ImGui::Checkbox("Use (G)ravity", &useGravity))
+    physics.UseGravity(useGravity);
+
+  if (useGravity) {
+    ImGui::InputFloat3("Gravity", &physics.GetGravity().x);
+  }
+
+  ImGui::End();
 }
 
 void TutorialGame::InitCamera() {
@@ -499,6 +516,24 @@ void TutorialGame::MoveSelectedObject() {
             ray.GetDirection() * forceMagnitude, closestCollision.collidedAt);
       }
     }
+  }
+
+  auto pitch = world.GetMainCamera().GetPitch();
+  auto roll = world.GetMainCamera().GetYaw();
+
+  Quaternion q;
+
+  if (Window::GetKeyboard()->KeyDown(KeyCodes::LEFT)) {
+    selectionObject->GetPhysicsObject()->AddForce(Vector3(-10, 0, 0));
+  }
+  if (Window::GetKeyboard()->KeyDown(KeyCodes::RIGHT)) {
+    selectionObject->GetPhysicsObject()->AddForce(Vector3(10, 0, 0));
+  }
+  if (Window::GetKeyboard()->KeyDown(KeyCodes::UP)) {
+    selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 10, 0));
+  }
+  if (Window::GetKeyboard()->KeyDown(KeyCodes::DOWN)) {
+    selectionObject->GetPhysicsObject()->AddForce(Vector3(0, -10, 0));
   }
 }
 

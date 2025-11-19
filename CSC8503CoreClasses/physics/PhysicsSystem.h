@@ -18,6 +18,7 @@ public:
   void SetGlobalDamping(float d) { globalDamping = d; }
 
   void SetGravity(const Vector3 &g);
+  Vector3 &GetGravity() { return gravity; }
 
 protected:
   void BasicCollisionDetection();

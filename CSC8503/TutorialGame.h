@@ -44,6 +44,8 @@ protected:
 
   void BridgeConstraintTest();
 
+  void DebugUi();
+
   bool SelectObject();
   void MoveSelectedObject();
   void DebugObjectMovement();
