@@ -1,25 +1,23 @@
 #pragma once
+
+#include "macros.h"
+
 namespace NCL {
-	enum class VolumeType 
-	{
-		AABB	= 1,
-		OBB		= 2,
-		Sphere	= 4, 
-		Mesh	= 8,
-		Capsule = 16,
-		Compound= 32,
-		Invalid = 256
-	};
+enum class VolumeType {
+  AABB = BIT(1),
+  OBB = BIT(2),
+  Sphere = BIT(3),
+  Mesh = BIT(4),
+  Capsule = BIT(5),
+  Compound = BIT(6),
+  Invalid = BIT(7)
+};
 
-	class CollisionVolume
-	{
-	public:
-		CollisionVolume() 
-		{
-			type = VolumeType::Invalid;
-		}
-		~CollisionVolume() = default;
+class CollisionVolume {
+public:
+  CollisionVolume() { type = VolumeType::Invalid; }
+  ~CollisionVolume() = default;
 
-		VolumeType type;
-	};
-}
+  VolumeType type;
+};
+} // namespace NCL
