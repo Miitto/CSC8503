@@ -37,6 +37,7 @@ public:
   Layer &GetLayers() { return layers; }
 
   Transform &GetTransform() { return transform; }
+  const Transform &GetTransform() const { return transform; }
 
   RenderObject *GetRenderObject() const { return renderObject; }
 

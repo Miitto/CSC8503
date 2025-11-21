@@ -1,6 +1,8 @@
 #pragma once
+#include "Player.h"
 #include "RenderObject.h"
 #include "StateGameObject.h"
+
 namespace NCL {
 class Controller;
 
@@ -34,8 +36,6 @@ protected:
   different objects being created in different test scenarios (constraints,
   collision types, and so on).
   */
-  void InitGameExamples();
-
   void CreateSphereGrid(int numRows, int numCols, float rowSpacing,
                         float colSpacing, float radius);
   void CreatedMixedGrid(int numRows, int numCols, float rowSpacing,
@@ -50,7 +50,6 @@ protected:
   bool SelectObject();
   void MoveSelectedObject();
   void DebugObjectMovement();
-  void LockedObjectMovement();
 
   GameObject *AddFloorToWorld(const NCL::Maths::Vector3 &position);
   GameObject *AddSphereToWorld(const NCL::Maths::Vector3 &position,
@@ -96,9 +95,7 @@ protected:
   GameTechMaterial notexMaterial;
 
   // Coursework Additional functionality
-  GameObject *lockedObject = nullptr;
-  NCL::Maths::Vector3 lockedOffset = NCL::Maths::Vector3(0, 14, 20);
-  void LockCameraToObject(GameObject *o) { lockedObject = o; }
+  Player *player;
 
   GameObject *objClosest = nullptr;
 };

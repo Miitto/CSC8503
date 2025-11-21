@@ -82,21 +82,8 @@ void TutorialGame::UpdateGame(float dt) {
   if (!inSelectionMode) {
     world.GetMainCamera().UpdateCamera(dt);
   }
-  if (lockedObject != nullptr) {
-    Vector3 objPos = lockedObject->GetTransform().GetPosition();
-    Vector3 camPos = objPos + lockedOffset;
 
-    Matrix4 temp = Matrix::View(camPos, objPos, Vector3(0, 1, 0));
-
-    Matrix4 modelMat = Matrix::Inverse(temp);
-
-    Quaternion q(modelMat);
-    Vector3 angles = q.ToEuler(); // nearly there now!
-
-    world.GetMainCamera().SetPosition(camPos);
-    world.GetMainCamera().SetPitch(angles.x);
-    world.GetMainCamera().SetYaw(angles.y);
-  }
+  player->CamToPlayer(world.GetMainCamera());
 
   if (Window::GetKeyboard()->KeyPressed(KeyCodes::F1)) {
     InitWorld(); // We can reset the simulation at any time with F1
@@ -129,11 +116,7 @@ void TutorialGame::UpdateGame(float dt) {
     world.ShuffleObjects(false);
   }
 
-  if (lockedObject) {
-    LockedObjectMovement();
-  } else {
-    DebugObjectMovement();
-  }
+  DebugObjectMovement();
 
   if (Window::GetKeyboard()->KeyPressed(KeyCodes::K) && selectionObject) {
     auto obj = world.ObjectLookAt(selectionObject);
@@ -201,7 +184,6 @@ void TutorialGame::InitCamera() {
   world.GetMainCamera().SetPitch(-15.0f);
   world.GetMainCamera().SetYaw(315.0f);
   world.GetMainCamera().SetPosition(Vector3(-60, 40, 60));
-  lockedObject = nullptr;
 }
 
 void TutorialGame::InitWorld() {
@@ -210,9 +192,9 @@ void TutorialGame::InitWorld() {
 
   CreatedMixedGrid(15, 15, 3.5f, 3.5f);
 
-  InitGameExamples();
-
   AddFloorToWorld(Vector3(0, -20, 0));
+
+  auto player = AddPlayerToWorld(Vector3(0, -15, 0));
 
   BridgeConstraintTest();
 
@@ -324,7 +306,7 @@ GameObject *TutorialGame::AddPlayerToWorld(const Vector3 &position) {
   float meshSize = 1.0f;
   float inverseMass = 0.5f;
 
-  GameObject *character = new GameObject();
+  auto *character = new Player(&world);
   SphereVolume *volume = new SphereVolume(1.0f);
 
   character->SetBoundingVolume(volume);
@@ -342,6 +324,8 @@ GameObject *TutorialGame::AddPlayerToWorld(const Vector3 &position) {
   character->GetPhysicsObject()->InitSphereInertia();
 
   world.AddGameObject(character);
+
+  player = character;
 
   return character;
 }
@@ -394,12 +378,6 @@ GameObject *TutorialGame::AddBonusToWorld(const Vector3 &position) {
 #pragma endregion
 
 #pragma region Examples and Tests
-void TutorialGame::InitGameExamples() {
-  AddPlayerToWorld(Vector3(0, 5, 0));
-  AddEnemyToWorld(Vector3(5, 5, 0));
-  AddBonusToWorld(Vector3(10, 5, 0));
-}
-
 void TutorialGame::CreateSphereGrid(int numRows, int numCols, float rowSpacing,
                                     float colSpacing, float radius) {
   for (int x = 0; x < numCols; ++x) {
@@ -514,15 +492,6 @@ bool TutorialGame::SelectObject() {
         return false;
       }
     }
-    if (Window::GetKeyboard()->KeyPressed(NCL::KeyCodes::L)) {
-      if (selectionObject) {
-        if (lockedObject == selectionObject) {
-          lockedObject = nullptr;
-        } else {
-          lockedObject = selectionObject;
-        }
-      }
-    }
   } else {
     Debug::Print("Press Q to change to select mode!", Vector2(5, 85));
   }
@@ -573,34 +542,6 @@ void TutorialGame::MoveSelectedObject() {
     selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 10, 0));
   }
   if (Window::GetKeyboard()->KeyDown(KeyCodes::DOWN)) {
-    selectionObject->GetPhysicsObject()->AddForce(Vector3(0, -10, 0));
-  }
-}
-
-void TutorialGame::LockedObjectMovement() {
-  Matrix4 view = world.GetMainCamera().BuildViewMatrix();
-  Matrix4 camWorld = Matrix::Inverse(view);
-
-  Vector3 rightAxis =
-      Vector3(camWorld.GetColumn(0)); // view is inverse of model!
-
-  // forward is more tricky -  camera forward is 'into' the screen...
-  // so we can take a guess, and use the cross of straight up, and
-  // the right axis, to hopefully get a vector that's good enough!
-
-  Vector3 fwdAxis = Vector::Cross(Vector3(0, 1, 0), rightAxis);
-  fwdAxis.y = 0.0f;
-  fwdAxis = Vector::Normalise(fwdAxis);
-
-  if (Window::GetKeyboard()->KeyDown(KeyCodes::UP)) {
-    selectionObject->GetPhysicsObject()->AddForce(fwdAxis);
-  }
-
-  if (Window::GetKeyboard()->KeyDown(KeyCodes::DOWN)) {
-    selectionObject->GetPhysicsObject()->AddForce(-fwdAxis);
-  }
-
-  if (Window::GetKeyboard()->KeyDown(KeyCodes::NEXT)) {
     selectionObject->GetPhysicsObject()->AddForce(Vector3(0, -10, 0));
   }
 }
