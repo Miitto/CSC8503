@@ -1,52 +1,47 @@
 #pragma once
 #include "NavigationMap.h"
+#include <array>
 #include <string>
-namespace NCL {
-	namespace CSC8503 {
-		struct GridNode {
-			GridNode* parent;
 
-			GridNode* connected[4];
-			int		  costs[4];
+namespace NCL::CSC8503 {
+struct GridNode {
+  GridNode *parent = nullptr;
 
-			Vector3		position;
+  struct Connection {
+    GridNode *node;
+    int cost;
+  };
 
-			float f;
-			float g;
+  std::array<Connection, 4> connections = {{nullptr, 0}};
 
-			int type;
+  Vector3 position = {};
 
-			GridNode() {
-				for (int i = 0; i < 4; ++i) {
-					connected[i] = nullptr;
-					costs[i] = 0;
-				}
-				f = 0;
-				g = 0;
-				type = 0;
-				parent = nullptr;
-			}
-			~GridNode() {	}
-		};
+  float f = 0;
+  float g = 0;
 
-		class NavigationGrid : public NavigationMap	{
-		public:
-			NavigationGrid();
-			NavigationGrid(const std::string&filename);
-			~NavigationGrid();
+  int type = 0;
 
-			bool FindPath(const Vector3& from, const Vector3& to, NavigationPath& outPath) override;
-				
-		protected:
-			bool		NodeInList(GridNode* n, std::vector<GridNode*>& list) const;
-			GridNode*	RemoveBestNode(std::vector<GridNode*>& list) const;
-			float		Heuristic(GridNode* hNode, GridNode* endNode) const;
-			int nodeSize;
-			int gridWidth;
-			int gridHeight;
+  GridNode() = default;
+  ~GridNode() = default;
+};
 
-			GridNode* allNodes;
-		};
-	}
-}
+class NavigationGrid : public NavigationMap {
+public:
+  NavigationGrid() = default;
+  NavigationGrid(const std::string &filename);
+  ~NavigationGrid();
 
+  bool FindPath(const Vector3 &from, const Vector3 &to,
+                NavigationPath &outPath) override;
+
+protected:
+  bool NodeInList(GridNode *n, std::vector<GridNode *> &list) const;
+  GridNode *RemoveBestNode(std::vector<GridNode *> &list) const;
+  float Heuristic(GridNode *hNode, GridNode *endNode) const;
+  int nodeSize = 0;
+  int gridWidth = 0;
+  int gridHeight = 0;
+
+  GridNode *allNodes = nullptr;
+};
+} // namespace NCL::CSC8503
