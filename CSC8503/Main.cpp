@@ -42,6 +42,34 @@ using namespace CSC8503;
 #include <sstream>
 #include <thread>
 
+void TestStateMachine() {
+  StateMachine *testMachine = new StateMachine();
+  int data = 0;
+
+  auto A = std::make_unique<State>([&](float dt) {
+    std::cout << "State A: " << data << std::endl;
+    ++data;
+  });
+
+  auto B = std::make_unique<State>([&](float dt) {
+    std::cout << "State B: " << data << std::endl;
+    --data;
+  });
+
+  auto stateAToB = std::make_unique<StateTransition>(
+      A.get(), B.get(), [&]() { return data > 10; });
+  auto stateBToA = std::make_unique<StateTransition>(
+      B.get(), A.get(), [&]() { return data < 0; });
+
+  testMachine->AddState(std::move(A));
+  testMachine->AddState(std::move(B));
+  testMachine->AddTransition(std::move(stateAToB));
+  testMachine->AddTransition(std::move(stateBToA));
+  for (int i = 0; i < 100; ++i) {
+    testMachine->Update(1.f);
+  }
+}
+
 void TestPathfinding() {}
 
 void DisplayPathfinding() {}

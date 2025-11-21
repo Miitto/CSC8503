@@ -2,22 +2,21 @@
 #include "GameObject.h"
 
 namespace NCL {
-    namespace CSC8503 {
-        class StateMachine;
-        class StateGameObject : public GameObject  
-        {
-        public:
-            StateGameObject();
-            ~StateGameObject();
+namespace CSC8503 {
+class StateMachine;
+class StateGameObject : public GameObject {
+public:
+  StateGameObject();
+  ~StateGameObject() = default;
 
-            virtual void Update(float dt);
+  virtual void Update(float dt) override;
 
-        protected:
-            void MoveLeft(float dt);
-            void MoveRight(float dt);
+protected:
+  void MoveLeft(float dt);
+  void MoveRight(float dt);
 
-            StateMachine* stateMachine;
-            float counter;
-        };
-    }
-}
+  std::unique_ptr<StateMachine> stateMachine;
+  float counter = 0.0f;
+};
+} // namespace CSC8503
+} // namespace NCL

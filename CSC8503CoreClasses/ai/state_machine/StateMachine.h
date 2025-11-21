@@ -1,28 +1,31 @@
 #pragma once
 
 namespace NCL {
-	namespace CSC8503 {
-		class State;
-		class StateTransition;
+namespace CSC8503 {
+class State;
+class StateTransition;
 
-		typedef std::multimap<State*, StateTransition*> TransitionContainer;
-		typedef TransitionContainer::iterator TransitionIterator;
+using StateP = std::unique_ptr<State>;
+using StateTransitionP = std::unique_ptr<StateTransition>;
 
-		class StateMachine	{
-		public:
-			StateMachine();
-			virtual ~StateMachine(); //made it virtual!
+using TransitionContainer = std::multimap<State *, StateTransitionP>;
+using TransitionIterator = TransitionContainer::iterator;
 
-			void AddState(State* s);
-			void AddTransition(StateTransition* t);
+class StateMachine {
+public:
+  StateMachine() = default;
+  virtual ~StateMachine() = default; // made it virtual!
 
-			virtual void Update(float dt); //made it virtual!
+  void AddState(StateP &&s);
+  void AddTransition(StateTransitionP &&t);
 
-		protected:
-			State * activeState;
+  virtual void Update(float dt); // made it virtual!
 
-			std::vector<State*> allStates;
-			TransitionContainer allTransitions;
-		};
-	}
-}
+protected:
+  State *activeState = nullptr;
+
+  std::vector<StateP> allStates;
+  TransitionContainer allTransitions;
+};
+} // namespace CSC8503
+} // namespace NCL

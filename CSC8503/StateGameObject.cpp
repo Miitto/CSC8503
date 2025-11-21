@@ -7,12 +7,30 @@
 using namespace NCL;
 using namespace CSC8503;
 
-StateGameObject::StateGameObject() {}
+StateGameObject::StateGameObject()
+    : stateMachine(std::make_unique<StateMachine>()) {
+  auto A = std::make_unique<State>([&](float dt) { MoveLeft(dt); });
+  auto B = std::make_unique<State>([&](float dt) { MoveRight(dt); });
 
-StateGameObject::~StateGameObject() { delete stateMachine; }
+  auto stateAToB = std::make_unique<StateTransition>(
+      A.get(), B.get(), [&]() { return counter > 3.0f; });
+  auto stateBToA = std::make_unique<StateTransition>(
+      B.get(), A.get(), [&]() { return counter < 0.0f; });
+  stateMachine->AddTransition(std::move(stateAToB));
+  stateMachine->AddTransition(std::move(stateBToA));
 
-void StateGameObject::Update(float dt) {}
+  stateMachine->AddState(std::move(A));
+  stateMachine->AddState(std::move(B));
+}
 
-void StateGameObject::MoveLeft(float dt) {}
+void StateGameObject::Update(float dt) { stateMachine->Update(dt); }
 
-void StateGameObject::MoveRight(float dt) {}
+void StateGameObject::MoveLeft(float dt) {
+  GetPhysicsObject()->AddForce({-100, -0, 0});
+  counter += dt;
+}
+
+void StateGameObject::MoveRight(float dt) {
+  GetPhysicsObject()->AddForce({100, 0, 0});
+  counter -= dt;
+}

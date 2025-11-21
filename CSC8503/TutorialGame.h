@@ -1,5 +1,6 @@
 #pragma once
 #include "RenderObject.h"
+#include "StateGameObject.h"
 namespace NCL {
 class Controller;
 
@@ -57,6 +58,8 @@ protected:
   GameObject *AddCubeToWorld(const NCL::Maths::Vector3 &position,
                              NCL::Maths::Vector3 dimensions,
                              float inverseMass = 10.0f);
+
+  StateGameObject *AddStateObjectToWorld(const NCL::Maths::Vector3 &position);
 
   GameObject *AddPlayerToWorld(const NCL::Maths::Vector3 &position);
   GameObject *AddEnemyToWorld(const NCL::Maths::Vector3 &position);

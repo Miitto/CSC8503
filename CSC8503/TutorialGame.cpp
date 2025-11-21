@@ -215,6 +215,8 @@ void TutorialGame::InitWorld() {
   AddFloorToWorld(Vector3(0, -20, 0));
 
   BridgeConstraintTest();
+
+  AddStateObjectToWorld(Vector3(50, 50, 50));
 }
 
 #pragma region World Building Functions
@@ -296,6 +298,26 @@ GameObject *TutorialGame::AddCubeToWorld(const Vector3 &position,
   world.AddGameObject(cube);
 
   return cube;
+}
+
+StateGameObject *TutorialGame::AddStateObjectToWorld(const Vector3 &position) {
+  StateGameObject *apple = new StateGameObject();
+
+  SphereVolume *volume = new SphereVolume(0.5f);
+  apple->SetBoundingVolume(volume);
+  apple->GetTransform().SetScale(Vector3(2, 2, 2)).SetPosition(position);
+
+  apple->SetRenderObject(
+      new RenderObject(apple->GetTransform(), bonusMesh, glassMaterial));
+  apple->SetPhysicsObject(
+      new PhysicsObject(apple->GetTransform(), apple->GetBoundingVolume()));
+
+  apple->GetPhysicsObject()->SetInverseMass(1.0f);
+  apple->GetPhysicsObject()->InitSphereInertia();
+
+  world.AddGameObject(apple);
+
+  return apple;
 }
 
 GameObject *TutorialGame::AddPlayerToWorld(const Vector3 &position) {
