@@ -37,7 +37,8 @@ public:
   void ShuffleObjects(bool state) { shuffleObjects = state; }
 
   bool Raycast(Ray &r, RayCollision &closestCollision,
-               bool closestObject = false, GameObject *ignore = nullptr) const;
+               bool closestObject = false,
+               const GameObject *const ignore = nullptr) const;
 
   struct LookingAt {
     GameObject *object;

@@ -1,5 +1,6 @@
 
-#include "TiedConstraint.h"
+
+#include "OffsetTiedConstraint.h"
 #include "GameObject.h"
 #include "physics/PhysicsObject.h"
 
@@ -7,16 +8,20 @@ using namespace NCL;
 using namespace Maths;
 using namespace CSC8503;
 
-TiedConstraint::TiedConstraint(GameObject *a, GameObject *b, float d)
-    : objectA(a), objectB(b), distance(d) {}
+Vector3 OffsetTiedConstraint::Obj::GetOffsetPos() {
+  auto pos = object->GetTransform().GetPosition();
+  auto rot = object->GetTransform().GetOrientation();
 
-// a simple constraint that stops objects from being more than <distance> away
-// from each other...this would be all we need to simulate a rope, or a ragdoll
-void TiedConstraint::UpdateConstraint(float dt) {
+  return pos + (rot * offset);
+}
+
+void OffsetTiedConstraint::UpdateConstraint(float dt) {
   if (!active)
     return;
-  auto relPos = objectA->GetTransform().GetPosition() -
-                objectB->GetTransform().GetPosition();
+  auto offsetPosA = objectA.GetOffsetPos();
+  auto offsetPosB = objectB.GetOffsetPos();
+
+  auto relPos = offsetPosA - offsetPosB;
 
   float currentDistance = Vector::Length(relPos);
 
@@ -28,8 +33,8 @@ void TiedConstraint::UpdateConstraint(float dt) {
 
   auto offsetDir = Vector::Normalise(relPos);
 
-  auto physA = objectA->GetPhysicsObject();
-  auto physB = objectB->GetPhysicsObject();
+  auto physA = objectA.object->GetPhysicsObject();
+  auto physB = objectB.object->GetPhysicsObject();
 
   auto relV = physA->GetLinearVelocity() - physB->GetLinearVelocity();
 
@@ -51,4 +56,10 @@ void TiedConstraint::UpdateConstraint(float dt) {
 
   physA->ApplyLinearImpulse(aJ);
   physB->ApplyLinearImpulse(bJ);
+
+  auto localPosA = offsetPosA - objectA.object->GetTransform().GetPosition();
+  auto localPosB = offsetPosB - objectB.object->GetTransform().GetPosition();
+
+  physA->ApplyAngularImpulse(Vector::Cross(localPosA, aJ));
+  physB->ApplyAngularImpulse(Vector::Cross(localPosB, bJ));
 }

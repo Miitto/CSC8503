@@ -5,6 +5,7 @@
 #include "physics/PhysicsObject.h"
 #include "physics/PhysicsSystem.h"
 
+#include "Oscillator.h"
 #include "StateGameObject.h"
 #include "constraints/OrientationConstraint.h"
 #include "constraints/PositionConstraint.h"
@@ -82,8 +83,25 @@ void TutorialGame::UpdateGame(float dt) {
   if (!inSelectionMode) {
     world.GetMainCamera().UpdateCamera(dt);
   }
+  {
+    auto camPos = world.GetMainCamera().GetPosition();
+    auto pos = pane->GetTransform().GetPosition();
 
-  player->CamToPlayer(world.GetMainCamera());
+    auto relPos = pos - camPos;
+    auto dir = Vector::Normalise(relPos);
+
+    auto distSq = Vector::Dot(relPos, relPos);
+
+    Ray ray(camPos, dir);
+    RayCollision rayCollision;
+    world.Raycast(ray, rayCollision, true, pane);
+    if (rayCollision.rayDistance * rayCollision.rayDistance < distSq) {
+      camPos = rayCollision.collidedAt + dir * 0.5f;
+      world.GetMainCamera().SetPosition(camPos);
+    }
+
+    NCL::Debug::DrawLine(camPos, pos, NCL::Debug::GREEN);
+  }
 
   if (Window::GetKeyboard()->KeyPressed(KeyCodes::F1)) {
     InitWorld(); // We can reset the simulation at any time with F1
@@ -194,11 +212,16 @@ void TutorialGame::InitWorld() {
 
   AddFloorToWorld(Vector3(0, -20, 0));
 
-  auto player = AddPlayerToWorld(Vector3(0, -15, 0));
+  AddPlayerToWorld(Vector3(0, -15, 0));
 
   BridgeConstraintTest();
 
   AddStateObjectToWorld(Vector3(50, 50, 50));
+  pane = AddPaneToWorld(Vector3(0, 10, -20), Vector2(4, 2), .5f);
+  pane->SetupConstraints(world);
+
+  AddCubeToWorld(Vector3(0, 20, -20), Vector3(2, 2, 2), 0.0f,
+                 new Oscillator({{0, 20, -20}, {}}, {{0, 40, -20}, {}}, 10.f));
 }
 
 #pragma region World Building Functions
@@ -260,9 +283,8 @@ GameObject *TutorialGame::AddSphereToWorld(const Vector3 &position,
 }
 
 GameObject *TutorialGame::AddCubeToWorld(const Vector3 &position,
-                                         Vector3 dimensions,
-                                         float inverseMass) {
-  GameObject *cube = new GameObject();
+                                         Vector3 dimensions, float inverseMass,
+                                         GameObject *cube) {
 
   AABBVolume *volume = new AABBVolume(dimensions);
   cube->SetBoundingVolume(volume);
@@ -306,7 +328,7 @@ GameObject *TutorialGame::AddPlayerToWorld(const Vector3 &position) {
   float meshSize = 1.0f;
   float inverseMass = 0.5f;
 
-  auto *character = new Player(&world);
+  auto *character = new GameObject();
   SphereVolume *volume = new SphereVolume(1.0f);
 
   character->SetBoundingVolume(volume);
@@ -324,8 +346,6 @@ GameObject *TutorialGame::AddPlayerToWorld(const Vector3 &position) {
   character->GetPhysicsObject()->InitSphereInertia();
 
   world.AddGameObject(character);
-
-  player = character;
 
   return character;
 }
@@ -374,6 +394,27 @@ GameObject *TutorialGame::AddBonusToWorld(const Vector3 &position) {
   world.AddGameObject(apple);
 
   return apple;
+}
+
+Pane *TutorialGame::AddPaneToWorld(const Vector3 &position,
+                                   const Vector2 &dimensions, float invMass) {
+  Pane *pane = new Pane(&world);
+  auto *volume = new OBBVolume(Vector3(dimensions.x, 0.1f, dimensions.y));
+  pane->SetBoundingVolume(volume);
+  pane->GetTransform()
+      .SetScale(Vector3(dimensions.x, 0.1f, dimensions.y))
+      .SetPosition(position);
+  GameTechMaterial paneMaterial;
+  paneMaterial.type = MaterialType::Transparent;
+  paneMaterial.diffuseTex = glassTex;
+  pane->SetRenderObject(
+      new RenderObject(pane->GetTransform(), cubeMesh, paneMaterial));
+  pane->SetPhysicsObject(
+      new PhysicsObject(pane->GetTransform(), pane->GetBoundingVolume()));
+  pane->GetPhysicsObject()->SetInverseMass(invMass);
+  pane->GetPhysicsObject()->InitCubeInertia();
+  world.AddGameObject(pane);
+  return pane;
 }
 #pragma endregion
 

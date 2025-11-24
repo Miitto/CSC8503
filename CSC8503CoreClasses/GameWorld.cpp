@@ -83,7 +83,8 @@ void GameWorld::UpdateWorld(float dt) {
 }
 
 bool GameWorld::Raycast(Ray &r, RayCollision &closestCollision,
-                        bool closestObject, GameObject *ignoreThis) const {
+                        bool closestObject,
+                        const GameObject *const ignoreThis) const {
   // The simplest raycast just goes through each object and sees if there's a
   // collision
   RayCollision collision;

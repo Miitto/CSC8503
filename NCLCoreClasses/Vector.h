@@ -310,6 +310,16 @@ constexpr VectorTemplate<T, n> Clamp(const VectorTemplate<T, n> &input,
   }
   return output;
 }
+
+template <typename T, uint32_t n>
+constexpr VectorTemplate<T, n> Lerp(const VectorTemplate<T, n> &a,
+                                    const VectorTemplate<T, n> &b, float t) {
+  VectorTemplate<T, n> result;
+  for (int i = 0; i < n; ++i) {
+    result.array[i] = a.array[i] + (b.array[i] - a.array[i]) * t;
+  }
+  return result;
+}
 } // namespace Vector
 
 template <typename T, uint32_t n>

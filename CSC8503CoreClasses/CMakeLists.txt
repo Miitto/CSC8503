@@ -8,9 +8,7 @@ set(AI_Behaviour_Tree
     "ai/behaviour_trees/BehaviourNode.h"
     "ai/behaviour_trees/BehaviourNodeWithChildren.h"
     "ai/behaviour_trees/BehaviourSelector.h"
-    "ai/behaviour_trees/BehaviourSelector.cpp"
     "ai/behaviour_trees/BehaviourSequence.h"
-    "ai/behaviour_trees/BehaviourSequence.cpp"
 )
 source_group("AI\\Behaviour Trees" FILES ${AI_Behaviour_Tree})
 
@@ -81,6 +79,8 @@ source_group("Physics" FILES ${Physics})
 
 set(Constraints
     "constraints/Constraint.h"
+    "constraints/OffsetTiedConstraint.cpp"
+    "constraints/OffsetTiedConstraint.h"
     "constraints/OrientationConstraint.cpp"
     "constraints/OrientationConstraint.h"
     "constraints/PositionConstraint.cpp"

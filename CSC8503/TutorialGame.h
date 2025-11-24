@@ -1,5 +1,5 @@
 #pragma once
-#include "Player.h"
+#include "Pane.h"
 #include "RenderObject.h"
 #include "StateGameObject.h"
 
@@ -56,13 +56,17 @@ protected:
                                float radius, float inverseMass = 10.0f);
   GameObject *AddCubeToWorld(const NCL::Maths::Vector3 &position,
                              NCL::Maths::Vector3 dimensions,
-                             float inverseMass = 10.0f);
+                             float inverseMass = 10.0f,
+                             GameObject *obj = new GameObject());
 
   StateGameObject *AddStateObjectToWorld(const NCL::Maths::Vector3 &position);
 
   GameObject *AddPlayerToWorld(const NCL::Maths::Vector3 &position);
   GameObject *AddEnemyToWorld(const NCL::Maths::Vector3 &position);
   GameObject *AddBonusToWorld(const NCL::Maths::Vector3 &position);
+
+  Pane *AddPaneToWorld(const NCL::Maths::Vector3 &position,
+                       const NCL::Maths::Vector2 &dimensions, float invMass);
 
   GameWorld &world;
   GameTechRendererInterface &renderer;
@@ -95,7 +99,7 @@ protected:
   GameTechMaterial notexMaterial;
 
   // Coursework Additional functionality
-  Player *player;
+  Pane *pane;
 
   GameObject *objClosest = nullptr;
 };
