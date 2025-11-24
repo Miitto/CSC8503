@@ -114,6 +114,11 @@ void PhysicsSystem::Update(float dt) {
     iteratorCount++;
   }
 
+  {
+    BroadPhase();
+    ProjectionNarrowPhase();
+  }
+
   ClearForces(); // Once we've finished with the forces, reset them to zero
 
   UpdateCollisionList(); // Remove any old collisions
@@ -232,12 +237,6 @@ void PhysicsSystem::ImpulseResolveCollision(
     return;
   }
 
-  // Projection
-  tA.SetPosition(tA.GetPosition() - (p.normal * p.penetration *
-                                     (physA->GetInverseMass() / totalMass)));
-  tB.SetPosition(tB.GetPosition() + (p.normal * p.penetration *
-                                     (physB->GetInverseMass() / totalMass)));
-
   auto relA = p.localA;
   auto relB = p.localB;
 
@@ -269,6 +268,33 @@ void PhysicsSystem::ImpulseResolveCollision(
 
   physA->ApplyAngularImpulse(Vector::Cross(relA, -fullImpulse));
   physB->ApplyAngularImpulse(Vector::Cross(relB, fullImpulse));
+}
+
+void PhysicsSystem::ProjectionNarrowPhase() {
+  for (auto cInfo : broadphaseCollisions) {
+    if (CollisionDetection::ObjectIntersection(cInfo.a, cInfo.b, cInfo)) {
+      cInfo.framesLeft = numCollisionFrames;
+      ProjectionResolveCollision(*cInfo.a, *cInfo.b, cInfo.point);
+    }
+  }
+}
+
+void PhysicsSystem::ProjectionResolveCollision(
+    GameObject &a, GameObject &b,
+    const CollisionDetection::ContactPoint &p) const {
+  auto physA = a.GetPhysicsObject();
+  auto physB = b.GetPhysicsObject();
+  auto &tA = a.GetTransform();
+  auto &tB = b.GetTransform();
+  float totalMass = physA->GetInverseMass() + physB->GetInverseMass();
+  if (totalMass <= 0) {
+    return;
+  }
+  // Projection
+  tA.SetPosition(tA.GetPosition() - (p.normal * p.penetration *
+                                     (physA->GetInverseMass() / totalMass)));
+  tB.SetPosition(tB.GetPosition() + (p.normal * p.penetration *
+                                     (physB->GetInverseMass() / totalMass)));
 }
 
 /*

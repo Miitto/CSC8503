@@ -38,6 +38,11 @@ protected:
   void ImpulseResolveCollision(GameObject &a, GameObject &b,
                                CollisionDetection::ContactPoint &p) const;
 
+  void ProjectionNarrowPhase();
+  void
+  ProjectionResolveCollision(GameObject &a, GameObject &b,
+                             const CollisionDetection::ContactPoint &p) const;
+
   GameWorld &gameWorld;
 
   bool applyGravity;
@@ -45,6 +50,7 @@ protected:
   float dTOffset;
   float globalDamping;
 
+  std::set<CollisionDetection::CollisionInfo> neededResolutions;
   std::set<CollisionDetection::CollisionInfo> allCollisions;
   std::set<CollisionDetection::CollisionInfo> broadphaseCollisions;
 
