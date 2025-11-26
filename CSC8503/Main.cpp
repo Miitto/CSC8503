@@ -104,31 +104,31 @@ void TestBehaviourTree() {
       "Find Key", [&](float dt, BehaviourState state) -> BehaviourState {
         if (state == BehaviourState::Initialise) {
           std::cout << "Finding Key..." << std::endl;
-          timer = rand() % 100;
-          state = BehaviourState::Ongoing;
+          timer = static_cast<float>(rand() % 100);
+          return BehaviourState::Ongoing;
         } else if (state == BehaviourState::Ongoing) {
           timer -= dt;
           if (timer <= 0.0f) {
             std::cout << "Found Key!\n";
             return BehaviourState::Success;
           }
-          return state;
         }
+        return state;
       });
 
   BehaviourAction *goToRoom = new BehaviourAction(
       "Go To Room", [&](float dt, BehaviourState state) -> BehaviourState {
         if (state == BehaviourState::Initialise) {
           std::cout << "Going to Room..." << std::endl;
-          state = BehaviourState::Ongoing;
+          return BehaviourState::Ongoing;
         } else if (state == BehaviourState::Ongoing) {
           distatnceToTarget -= dt;
           if (distatnceToTarget <= 0.0f) {
             std::cout << "Reached Room!\n";
             return BehaviourState::Success;
           }
-          return state;
         }
+        return state;
       });
 
   BehaviourAction *openDoor = new BehaviourAction(
@@ -156,6 +156,7 @@ void TestBehaviourTree() {
             return BehaviourState::Failure;
           }
         }
+        return state;
       });
 
   BehaviourAction *lookForItems = new BehaviourAction(
@@ -173,9 +174,37 @@ void TestBehaviourTree() {
             return BehaviourState::Failure;
           }
         }
+        return state;
       });
 
-  BehaviourSequence *sequence = new BehaviourSequence("Room Sequence")
+  BehaviourSequence *sequence = new BehaviourSequence("Room Sequence");
+  sequence->AddChild(findKey).AddChild(goToRoom).AddChild(openDoor);
+
+  BehaviourSelector *selector = new BehaviourSelector("Loot Selection");
+  selector->AddChild(lookForTreasure).AddChild(lookForItems);
+
+  BehaviourSequence *root = new BehaviourSequence("Root Sequence");
+  root->AddChild(sequence).AddChild(selector);
+
+  for (int i = 0; i < 5; ++i) {
+    std::cout << "---- Behaviour Tree Run " << i << " ----\n";
+    timer = 0.0f;
+    distatnceToTarget = static_cast<float>(rand() % 250);
+    root->Reset();
+    BehaviourState result = BehaviourState::Ongoing;
+
+    while (result == BehaviourState::Ongoing) {
+      result = root->Execute(1.0f);
+    }
+
+    if (result == BehaviourState::Success) {
+      std::cout << "Behaviour Tree Succeeded!\n";
+    } else {
+      std::cout << "Behaviour Tree Failed.\n";
+    }
+
+    std::cout << "---- End Behaviour Tree Run " << i << " ----\n\n";
+  }
 }
 
 /*

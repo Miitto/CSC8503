@@ -10,7 +10,10 @@ public:
       delete i;
     }
   }
-  void AddChild(BehaviourNode *n) { childNodes.emplace_back(n); }
+  BehaviourNodeWithChildren &AddChild(BehaviourNode *n) {
+    childNodes.emplace_back(n);
+    return *this;
+  }
 
   void Reset() override {
     currentState = BehaviourState::Initialise;
