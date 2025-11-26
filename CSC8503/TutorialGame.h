@@ -29,6 +29,7 @@ protected:
   void InitCamera();
 
   void InitWorld();
+  void InitCollisionTest();
 
   /*
   These are some of the world/object creation functions I created when testing

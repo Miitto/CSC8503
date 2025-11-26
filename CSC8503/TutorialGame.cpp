@@ -83,7 +83,7 @@ void TutorialGame::UpdateGame(float dt) {
   if (!inSelectionMode) {
     world.GetMainCamera().UpdateCamera(dt);
   }
-  {
+  if (pane) {
     auto camPos = world.GetMainCamera().GetPosition();
     auto pos = pane->GetTransform().GetPosition();
 
@@ -174,6 +174,24 @@ void TutorialGame::DebugUi() {
   if (useGravity) {
     ImGui::InputFloat3("Gravity", &physics.GetGravity().x);
   }
+
+  constexpr const char *const scenes[] = {"Default Scene", "Collision Test"};
+  static int currentScene = 0;
+  ImGui::Text("Load Scene:");
+  if (ImGui::BeginCombo("Scenes", scenes[currentScene])) {
+    if (ImGui::Selectable(scenes[0])) {
+      currentScene = 0;
+      InitWorld();
+      selectionObject = nullptr;
+    }
+    if (ImGui::Selectable(scenes[1])) {
+      currentScene = 1;
+      InitCollisionTest();
+      selectionObject = nullptr;
+    }
+    ImGui::EndCombo();
+  }
+
   ImGui::End();
 
   if (selectionObject) {
@@ -192,6 +210,29 @@ void TutorialGame::DebugUi() {
     if (ImGui::InputFloat3("W", &angVel.x)) {
       selectionObject->GetPhysicsObject()->SetAngularVelocity(angVel);
     }
+    ImGui::Text("Inv Mass: %.3f",
+                selectionObject->GetPhysicsObject()->GetInverseMass());
+
+    constexpr const char *const colliderNames[] = {"None", "Sphere ", "AABB",
+                                                   "OBB", "Capsule"};
+    int idx = 0;
+    switch (selectionObject->GetBoundingVolume()->type) {
+    case VolumeType::Sphere:
+      idx = 1;
+      break;
+    case VolumeType::AABB:
+      idx = 2;
+      break;
+    case VolumeType::OBB:
+      idx = 3;
+      break;
+    case VolumeType::Capsule:
+      idx = 4;
+      break;
+    }
+
+    ImGui::Text("Collider: %s", colliderNames[idx]);
+
     ImGui::End();
   }
 }
@@ -208,7 +249,7 @@ void TutorialGame::InitWorld() {
   world.ClearAndErase();
   physics.Clear();
 
-  CreatedMixedGrid(15, 15, 3.5f, 3.5f);
+  CreatedMixedGrid(15, 15, 5.f, 5.f);
 
   AddFloorToWorld(Vector3(0, -20, 0));
 
@@ -217,11 +258,24 @@ void TutorialGame::InitWorld() {
   BridgeConstraintTest();
 
   AddStateObjectToWorld(Vector3(50, 50, 50));
-  pane = AddPaneToWorld(Vector3(0, 10, -20), Vector2(4, 2), .5f);
-  pane->SetupConstraints(world);
+  // pane = AddPaneToWorld(Vector3(0, 10, -20), Vector2(4, 2), .5f);
+  // pane->SetupConstraints(world);
 
   AddCubeToWorld(Vector3(0, 20, -20), Vector3(2, 2, 2), 0.0f,
                  new Oscillator({{0, 20, -20}, {}}, {{0, 40, -20}, {}}, 10.f));
+}
+
+void TutorialGame::InitCollisionTest() {
+  world.ClearAndErase();
+  physics.Clear();
+
+  AddFloorToWorld(Vector3(0, -20, 0));
+  AddSphereToWorld(Vector3(0, 0, 0), 1.0f, 10.0f);
+  AddSphereToWorld(Vector3(0, 5, 0), 1.0f, 10.0f);
+  AddSphereToWorld(Vector3(0, 10, 0), 1.0f, 10.0f);
+  AddSphereToWorld(Vector3(5, 0, 0), 1.0f, 10.0f);
+  AddSphereToWorld(Vector3(10, 0, 0), 1.0f, 10.0f);
+  AddSphereToWorld(Vector3(15, 0, 0), 1.0f, 10.0f);
 }
 
 #pragma region World Building Functions

@@ -18,6 +18,8 @@ public:
   CollisionVolume() { type = VolumeType::Invalid; }
   ~CollisionVolume() = default;
 
+  virtual float GetMaxExtent() const = 0;
+
   VolumeType type;
 };
 } // namespace NCL

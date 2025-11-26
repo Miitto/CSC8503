@@ -8,7 +8,8 @@ using namespace NCL;
 using namespace CSC8503;
 
 Oscillator::Oscillator(Keyframe start, Keyframe end, float duration)
-    : GameObject("Oscillator"), start(start), end(end), duration(duration) {
+    : GameObject("Oscillator"), stateMachine(std::make_unique<StateMachine>()),
+      start(start), end(end), duration(duration) {
   auto A = std::make_unique<State>([&](float dt) {
     updatePosition();
     counter += dt;

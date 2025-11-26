@@ -60,15 +60,9 @@ public:
     }
   };
 
-  static bool AABBCapsuleIntersection(const CapsuleVolume &volumeA,
-                                      const Transform &worldTransformA,
-                                      const AABBVolume &volumeB,
-                                      const Transform &worldTransformB,
-                                      CollisionInfo &collisionInfo);
-
-  static bool SphereCapsuleIntersection(const CapsuleVolume &volumeA,
+  static bool SphereCapsuleIntersection(const SphereVolume &volumeA,
                                         const Transform &worldTransformA,
-                                        const SphereVolume &volumeB,
+                                        const CapsuleVolume &volumeB,
                                         const Transform &worldTransformB,
                                         CollisionInfo &collisionInfo);
 
@@ -106,23 +100,34 @@ public:
   static bool ObjectIntersection(GameObject *a, GameObject *b,
                                  CollisionInfo &collisionInfo);
 
-  static bool AABBIntersection(const AABBVolume &volumeA,
-                               const Transform &worldTransformA,
-                               const AABBVolume &volumeB,
-                               const Transform &worldTransformB,
-                               CollisionInfo &collisionInfo);
-
   static bool SphereIntersection(const SphereVolume &volumeA,
                                  const Transform &worldTransformA,
                                  const SphereVolume &volumeB,
                                  const Transform &worldTransformB,
                                  CollisionInfo &collisionInfo);
 
+  static bool AABBIntersection(const AABBVolume &volumeA,
+                               const Transform &worldTransformA,
+                               const AABBVolume &volumeB,
+                               const Transform &worldTransformB,
+                               CollisionInfo &collisionInfo);
   static bool AABBSphereIntersection(const AABBVolume &volumeA,
                                      const Transform &worldTransformA,
                                      const SphereVolume &volumeB,
                                      const Transform &worldTransformB,
                                      CollisionInfo &collisionInfo);
+
+  static bool AABBCapsuleIntersection(const AABBVolume &volumeA,
+                                      const Transform &worldTransformA,
+                                      const CapsuleVolume &volumeB,
+                                      const Transform &worldTransformB,
+                                      CollisionInfo &collisionInfo);
+
+  static bool AABBOBBIntersection(const AABBVolume &volumeA,
+                                  const Transform &worldTransformA,
+                                  const OBBVolume &volumeB,
+                                  const Transform &worldTransformB,
+                                  CollisionInfo &collisionInfo);
 
   static bool OBBIntersection(const OBBVolume &volumeA,
                               const Transform &worldTransformA,
@@ -135,6 +140,18 @@ public:
                                     const SphereVolume &volumeB,
                                     const Transform &worldTransformB,
                                     CollisionInfo &collisionInfo);
+
+  static bool OBBCapsuleIntersection(const OBBVolume &volumeA,
+                                     const Transform &worldTransformA,
+                                     const CapsuleVolume &volumeB,
+                                     const Transform &worldTransformB,
+                                     CollisionInfo &collisionInfo);
+
+  static bool CapsuleIntersection(const CapsuleVolume &volumeA,
+                                  const Transform &worldTransformA,
+                                  const CapsuleVolume &volumeB,
+                                  const Transform &worldTransformB,
+                                  CollisionInfo &collisionInfo);
 
   static Vector3 Unproject(const Vector3 &screenPos,
                            const PerspectiveCamera &cam);

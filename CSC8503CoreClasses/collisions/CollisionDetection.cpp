@@ -194,80 +194,74 @@ bool CollisionDetection::ObjectIntersection(GameObject *a, GameObject *b,
   Transform &transformA = a->GetTransform();
   Transform &transformB = b->GetTransform();
 
-  VolumeType pairType = (VolumeType)((int)volA->type | (int)volB->type);
+  // Quick check first based on max extents
+  auto relPos = transformB.GetPosition() - transformA.GetPosition();
+  auto distSq = Vector::Dot(relPos, relPos);
 
-  // Two AABBs
-  if (pairType == VolumeType::AABB) {
-    return AABBIntersection((AABBVolume &)*volA, transformA,
-                            (AABBVolume &)*volB, transformB, collisionInfo);
-  }
-  // Two Spheres
-  if (pairType == VolumeType::Sphere) {
-    return SphereIntersection((SphereVolume &)*volA, transformA,
-                              (SphereVolume &)*volB, transformB, collisionInfo);
-  }
-  // Two OBBs
-  if (pairType == VolumeType::OBB) {
-    return OBBIntersection((OBBVolume &)*volA, transformA, (OBBVolume &)*volB,
-                           transformB, collisionInfo);
-  }
-  // Two Capsules
+  auto maxExtent = volA->GetMaxExtent() + volB->GetMaxExtent();
 
-  // AABB vs Sphere pairs
-  if (volA->type == VolumeType::AABB && volB->type == VolumeType::Sphere) {
-    return AABBSphereIntersection((AABBVolume &)*volA, transformA,
-                                  (SphereVolume &)*volB, transformB,
-                                  collisionInfo);
-  }
-  if (volA->type == VolumeType::Sphere && volB->type == VolumeType::AABB) {
-    collisionInfo.a = b;
-    collisionInfo.b = a;
-    return AABBSphereIntersection((AABBVolume &)*volB, transformB,
-                                  (SphereVolume &)*volA, transformA,
-                                  collisionInfo);
+  if (distSq > maxExtent * maxExtent) {
+    return false;
   }
 
-  // OBB vs sphere pairs
-  if (volA->type == VolumeType::OBB && volB->type == VolumeType::Sphere) {
-    return OBBSphereIntersection((OBBVolume &)*volA, transformA,
-                                 (SphereVolume &)*volB, transformB,
-                                 collisionInfo);
-  }
-  if (volA->type == VolumeType::Sphere && volB->type == VolumeType::OBB) {
-    collisionInfo.a = b;
-    collisionInfo.b = a;
-    return OBBSphereIntersection((OBBVolume &)*volB, transformB,
-                                 (SphereVolume &)*volA, transformA,
-                                 collisionInfo);
-  }
+#define A(FN, TYPEA, TYPEB)                                                    \
+  FN((TYPEA &)*volA, transformA, (TYPEB &)*volB, transformB, collisionInfo);
 
-  // Capsule vs other interactions
-  if (volA->type == VolumeType::Capsule && volB->type == VolumeType::Sphere) {
-    return SphereCapsuleIntersection((CapsuleVolume &)*volA, transformA,
-                                     (SphereVolume &)*volB, transformB,
-                                     collisionInfo);
-  }
-  if (volA->type == VolumeType::Sphere && volB->type == VolumeType::Capsule) {
-    collisionInfo.a = b;
-    collisionInfo.b = a;
-    return SphereCapsuleIntersection((CapsuleVolume &)*volB, transformB,
-                                     (SphereVolume &)*volA, transformA,
-                                     collisionInfo);
-  }
+#define B(FN, TYPEB, TYPEA)                                                    \
+  collisionInfo.a = b, collisionInfo.b = a,                                    \
+  FN((TYPEB &)*volB, transformB, (TYPEA &)*volA, transformA, collisionInfo);
 
-  if (volA->type == VolumeType::Capsule && volB->type == VolumeType::AABB) {
-    return AABBCapsuleIntersection((CapsuleVolume &)*volA, transformA,
-                                   (AABBVolume &)*volB, transformB,
-                                   collisionInfo);
-  }
-  if (volB->type == VolumeType::Capsule && volA->type == VolumeType::AABB) {
-    collisionInfo.a = b;
-    collisionInfo.b = a;
-    return AABBCapsuleIntersection((CapsuleVolume &)*volB, transformB,
-                                   (AABBVolume &)*volA, transformA,
-                                   collisionInfo);
-  }
+  switch (volA->type) {
+  case VolumeType::AABB:
+    switch (volB->type) {
+    case VolumeType::AABB:
+      return A(AABBIntersection, AABBVolume, AABBVolume);
+    case VolumeType::Sphere:
+      return A(AABBSphereIntersection, AABBVolume, SphereVolume);
+    case VolumeType::OBB:
+      return A(AABBOBBIntersection, AABBVolume, OBBVolume);
+    case VolumeType::Capsule:
+      return A(AABBCapsuleIntersection, AABBVolume, CapsuleVolume);
+    }
+    break;
 
+  case VolumeType::Sphere:
+    switch (volB->type) {
+    case VolumeType::AABB:
+      return B(AABBSphereIntersection, AABBVolume, SphereVolume);
+    case VolumeType::Sphere:
+      return A(SphereIntersection, SphereVolume, SphereVolume);
+    case VolumeType::OBB:
+      return B(OBBSphereIntersection, OBBVolume, SphereVolume);
+    case VolumeType::Capsule:
+      return A(SphereCapsuleIntersection, SphereVolume, CapsuleVolume);
+    }
+    break;
+  case VolumeType::OBB:
+    switch (volB->type) {
+    case VolumeType::AABB:
+      return B(AABBOBBIntersection, AABBVolume, OBBVolume);
+    case VolumeType::Sphere:
+      return A(OBBSphereIntersection, OBBVolume, SphereVolume);
+    case VolumeType::OBB:
+      return A(OBBIntersection, OBBVolume, OBBVolume);
+    case VolumeType::Capsule:
+      return A(OBBCapsuleIntersection, OBBVolume, CapsuleVolume);
+    }
+    break;
+  case VolumeType::Capsule:
+    switch (volB->type) {
+    case VolumeType::AABB:
+      return B(AABBCapsuleIntersection, AABBVolume, CapsuleVolume);
+    case VolumeType::Sphere:
+      return B(SphereCapsuleIntersection, SphereVolume, CapsuleVolume);
+    case VolumeType::OBB:
+      return B(OBBCapsuleIntersection, OBBVolume, CapsuleVolume);
+    case VolumeType::Capsule:
+      return A(CapsuleIntersection, CapsuleVolume, CapsuleVolume);
+    }
+    break;
+  }
   return false;
 }
 
@@ -359,6 +353,13 @@ bool CollisionDetection::SphereIntersection(const SphereVolume &volumeA,
   return true;
 }
 
+bool CollisionDetection::SphereCapsuleIntersection(
+    const SphereVolume &volumeA, const Transform &worldTransformA,
+    const CapsuleVolume &volumeB, const Transform &worldTransformB,
+    CollisionInfo &collisionInfo) {
+  return false;
+}
+
 // AABB - Sphere Collision
 bool CollisionDetection::AABBSphereIntersection(
     const AABBVolume &volumeA, const Transform &worldTransformA,
@@ -387,24 +388,64 @@ bool CollisionDetection::AABBSphereIntersection(
   return false;
 }
 
-bool CollisionDetection::OBBSphereIntersection(const OBBVolume &volumeA,
-                                               const Transform &worldTransformA,
-                                               const SphereVolume &volumeB,
-                                               const Transform &worldTransformB,
-                                               CollisionInfo &collisionInfo) {
-  return false;
+bool CollisionDetection::AABBOBBIntersection(const AABBVolume &volumeA,
+                                             const Transform &worldTransformA,
+                                             const OBBVolume &volumeB,
+                                             const Transform &worldTransformB,
+                                             CollisionInfo &collisionInfo) {
+  auto aBoxPos = worldTransformA.GetPosition();
+  auto aBoxSize = volumeA.GetHalfDimensions();
+
+  auto bBoxPos = worldTransformB.GetPosition();
+  auto bBoxSizeUnrot = volumeB.GetHalfDimensions();
+
+  auto bRot = worldTransformB.GetOrientation();
+
+  auto bBoxSize =
+      Vector3(abs(bBoxSizeUnrot.x * bRot.w) + abs(bBoxSizeUnrot.y * bRot.z) +
+                  abs(bBoxSizeUnrot.z * bRot.y),
+              abs(bBoxSizeUnrot.x * bRot.z) + abs(bBoxSizeUnrot.y * bRot.w) +
+                  abs(bBoxSizeUnrot.z * bRot.x),
+              abs(bBoxSizeUnrot.x * bRot.y) + abs(bBoxSizeUnrot.y * bRot.x) +
+                  abs(bBoxSizeUnrot.z * bRot.w));
+
+  auto toB = aBoxPos - bBoxPos;
+
+  auto xAxis = bRot * Vector3(1, 0, 0);
+  auto yAxis = bRot * Vector3(0, 1, 0);
+  auto zAxis = bRot * Vector3(0, 0, 1);
+
+  constexpr Vector3 Y(0, 1, 0);
+  constexpr Vector3 X(1, 0, 0);
+  constexpr Vector3 Z(0, 0, 1);
+
+  auto getSeparatingPlane = [&](const Vector3 &axis) -> float {
+    return (fabs(Vector::Dot(toB, axis)) >
+            (fabs(Vector::Dot((X * aBoxSize.x), axis)) +
+             fabs(Vector::Dot((Y * aBoxSize.y), axis)) +
+             fabs(Vector::Dot((Z * aBoxSize.z), axis)) +
+             fabs(Vector::Dot((xAxis * bBoxSize.x), axis)) +
+             fabs(Vector::Dot((yAxis * bBoxSize.y), axis)) +
+             fabs(Vector::Dot((zAxis * bBoxSize.z), axis))));
+  };
+
+  return !(getSeparatingPlane(X) || getSeparatingPlane(Y) ||
+           getSeparatingPlane(Z) || getSeparatingPlane(xAxis) ||
+           getSeparatingPlane(yAxis) || getSeparatingPlane(zAxis) ||
+           getSeparatingPlane(Vector::Cross(X, xAxis)) ||
+           getSeparatingPlane(Vector::Cross(X, yAxis)) ||
+           getSeparatingPlane(Vector::Cross(X, zAxis)) ||
+           getSeparatingPlane(Vector::Cross(Y, xAxis)) ||
+           getSeparatingPlane(Vector::Cross(Y, yAxis)) ||
+           getSeparatingPlane(Vector::Cross(Y, zAxis)) ||
+           getSeparatingPlane(Vector::Cross(Z, xAxis)) ||
+           getSeparatingPlane(Vector::Cross(Z, yAxis)) ||
+           getSeparatingPlane(Vector::Cross(Z, zAxis)));
 }
 
 bool CollisionDetection::AABBCapsuleIntersection(
-    const CapsuleVolume &volumeA, const Transform &worldTransformA,
-    const AABBVolume &volumeB, const Transform &worldTransformB,
-    CollisionInfo &collisionInfo) {
-  return false;
-}
-
-bool CollisionDetection::SphereCapsuleIntersection(
-    const CapsuleVolume &volumeA, const Transform &worldTransformA,
-    const SphereVolume &volumeB, const Transform &worldTransformB,
+    const AABBVolume &volumeA, const Transform &worldTransformA,
+    const CapsuleVolume &volumeB, const Transform &worldTransformB,
     CollisionInfo &collisionInfo) {
   return false;
 }
@@ -414,6 +455,78 @@ bool CollisionDetection::OBBIntersection(const OBBVolume &volumeA,
                                          const OBBVolume &volumeB,
                                          const Transform &worldTransformB,
                                          CollisionInfo &collisionInfo) {
+  auto aBoxPos = worldTransformA.GetPosition();
+  auto aBoxSize = volumeA.GetHalfDimensions();
+
+  auto aRot = worldTransformA.GetOrientation();
+
+  auto X = aRot * Vector3(1, 0, 0);
+  auto Y = aRot * Vector3(0, 1, 0);
+  auto Z = aRot * Vector3(0, 0, 1);
+
+  auto bBoxPos = worldTransformB.GetPosition();
+  auto bBoxSizeUnrot = volumeB.GetHalfDimensions();
+
+  auto bRot = worldTransformB.GetOrientation();
+
+  auto bBoxSize =
+      Vector3(abs(bBoxSizeUnrot.x * bRot.w) + abs(bBoxSizeUnrot.y * bRot.z) +
+                  abs(bBoxSizeUnrot.z * bRot.y),
+              abs(bBoxSizeUnrot.x * bRot.z) + abs(bBoxSizeUnrot.y * bRot.w) +
+                  abs(bBoxSizeUnrot.z * bRot.x),
+              abs(bBoxSizeUnrot.x * bRot.y) + abs(bBoxSizeUnrot.y * bRot.x) +
+                  abs(bBoxSizeUnrot.z * bRot.w));
+
+  auto toB = aBoxPos - bBoxPos;
+
+  auto xAxis = bRot * Vector3(1, 0, 0);
+  auto yAxis = bRot * Vector3(0, 1, 0);
+  auto zAxis = bRot * Vector3(0, 0, 1);
+
+  auto getSeparatingPlane = [&](const Vector3 &axis) -> float {
+    return (fabs(Vector::Dot(toB, axis)) >
+            (fabs(Vector::Dot((X * aBoxSize.x), axis)) +
+             fabs(Vector::Dot((Y * aBoxSize.y), axis)) +
+             fabs(Vector::Dot((Z * aBoxSize.z), axis)) +
+             fabs(Vector::Dot((xAxis * bBoxSize.x), axis)) +
+             fabs(Vector::Dot((yAxis * bBoxSize.y), axis)) +
+             fabs(Vector::Dot((zAxis * bBoxSize.z), axis))));
+  };
+
+  return !(getSeparatingPlane(X) || getSeparatingPlane(Y) ||
+           getSeparatingPlane(Z) || getSeparatingPlane(xAxis) ||
+           getSeparatingPlane(yAxis) || getSeparatingPlane(zAxis) ||
+           getSeparatingPlane(Vector::Cross(X, xAxis)) ||
+           getSeparatingPlane(Vector::Cross(X, yAxis)) ||
+           getSeparatingPlane(Vector::Cross(X, zAxis)) ||
+           getSeparatingPlane(Vector::Cross(Y, xAxis)) ||
+           getSeparatingPlane(Vector::Cross(Y, yAxis)) ||
+           getSeparatingPlane(Vector::Cross(Y, zAxis)) ||
+           getSeparatingPlane(Vector::Cross(Z, xAxis)) ||
+           getSeparatingPlane(Vector::Cross(Z, yAxis)) ||
+           getSeparatingPlane(Vector::Cross(Z, zAxis)));
+}
+
+bool CollisionDetection::OBBSphereIntersection(const OBBVolume &volumeA,
+                                               const Transform &worldTransformA,
+                                               const SphereVolume &volumeB,
+                                               const Transform &worldTransformB,
+                                               CollisionInfo &collisionInfo) {
+  return false;
+}
+
+bool CollisionDetection::OBBCapsuleIntersection(
+    const OBBVolume &volumeA, const Transform &worldTransformA,
+    const CapsuleVolume &volumeB, const Transform &worldTransformB,
+    CollisionInfo &collisionInfo) {
+  return false;
+}
+
+bool CollisionDetection::CapsuleIntersection(const CapsuleVolume &volumeA,
+                                             const Transform &worldTransformA,
+                                             const CapsuleVolume &volumeB,
+                                             const Transform &worldTransformB,
+                                             CollisionInfo &collisionInfo) {
   return false;
 }
 

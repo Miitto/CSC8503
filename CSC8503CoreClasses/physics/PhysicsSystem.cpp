@@ -290,10 +290,13 @@ void PhysicsSystem::ProjectionResolveCollision(
   if (totalMass <= 0) {
     return;
   }
+
+  constexpr float multiplier = 0.25f;
+
   // Projection
-  tA.SetPosition(tA.GetPosition() - (p.normal * p.penetration *
+  tA.SetPosition(tA.GetPosition() - (p.normal * p.penetration * multiplier *
                                      (physA->GetInverseMass() / totalMass)));
-  tB.SetPosition(tB.GetPosition() + (p.normal * p.penetration *
+  tB.SetPosition(tB.GetPosition() + (p.normal * p.penetration * multiplier *
                                      (physB->GetInverseMass() / totalMass)));
 }
 

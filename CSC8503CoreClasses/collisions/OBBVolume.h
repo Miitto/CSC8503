@@ -2,22 +2,21 @@
 #include "CollisionVolume.h"
 
 namespace NCL {
-	class OBBVolume : public CollisionVolume
-	{
-	public:
-		OBBVolume(const Maths::Vector3& halfDims) 
-		{
-			type		= VolumeType::OBB;
-			halfSizes	= halfDims;
-		}
-		~OBBVolume() = default;
+class OBBVolume : public CollisionVolume {
+public:
+  OBBVolume(const Maths::Vector3 &halfDims) {
+    type = VolumeType::OBB;
+    halfSizes = halfDims;
+  }
+  ~OBBVolume() = default;
 
-		Maths::Vector3 GetHalfDimensions() const 
-		{
-			return halfSizes;
-		}
-	protected:
-		Maths::Vector3 halfSizes;
-	};
-}
+  float GetMaxExtent() const override {
+    return Maths::Vector::GetAbsMaxElement(halfSizes) * 1.4f;
+  }
 
+  Maths::Vector3 GetHalfDimensions() const { return halfSizes; }
+
+protected:
+  Maths::Vector3 halfSizes;
+};
+} // namespace NCL
