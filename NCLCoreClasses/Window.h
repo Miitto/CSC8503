@@ -13,103 +13,99 @@ https://research.ncl.ac.uk/game/
 #include "Vector.h"
 
 namespace NCL {
-	class GameTimer;
-	namespace Rendering {
-		class RendererBase;
-	};
-	using namespace Rendering;
+class GameTimer;
+namespace Rendering {
+class RendererBase;
+};
+using namespace Rendering;
 
-	enum class WindowEvent {
-		Minimize,
-		Maximize,
-		Resize,
-		Fullscreen,
-		Windowed
-	};
+enum class WindowEvent { Minimize, Maximize, Resize, Fullscreen, Windowed };
 
-	struct WindowInitialisation {
-		uint32_t width;
-		uint32_t height;
-		bool	 fullScreen			= false;
-		uint32_t refreshRate		= 60;
+struct WindowInitialisation {
+  uint32_t width;
+  uint32_t height;
+  bool fullScreen = false;
+  uint32_t refreshRate = 60;
 
-		std::string windowTitle		= "NCLGL!";
+  std::string windowTitle = "NCLGL!";
 
-		uint32_t windowPositionX	= 0;
-		uint32_t windowPositionY	= 0;
-		uint32_t consolePositionX	= 0;
-		uint32_t consolePositionY	= 0;
-	};
+  uint32_t windowPositionX = 0;
+  uint32_t windowPositionY = 0;
+  uint32_t consolePositionX = 0;
+  uint32_t consolePositionY = 0;
+};
 
-	using WindowEventHandler = std::function<void(WindowEvent e, uint32_t w, uint32_t h)>;
-	
-	class Window {
-	public:
-		static Window* CreateGameWindow(const WindowInitialisation& init);
+using WindowEventHandler =
+    std::function<void(WindowEvent e, uint32_t w, uint32_t h)>;
 
-		static void DestroyGameWindow() {
-			delete window;
-			window = nullptr;
-		}
+class Window {
+public:
+  static Window *CreateGameWindow(const WindowInitialisation &init);
 
-		bool		IsMinimised() const { return minimised;	 }
+  static void DestroyGameWindow() {
+    delete window;
+    window = nullptr;
+  }
 
-		bool		UpdateWindow();
+  bool IsMinimised() const { return minimised; }
 
-		bool		HasInitialised()	const { return init; }
+  bool UpdateWindow();
 
-		float		GetScreenAspect()	const {
-			return (float)size.x / (float)size.y;
-		}
+  bool ShouldClose() const { return shouldClose; }
+  void RequestExit() { shouldClose = true; }
 
-		Vector2i		GetScreenSize()		const { return size; }
-		Vector2i		GetScreenPosition()	const { return position; }
+  bool HasInitialised() const { return init; }
 
-		const std::string&  GetTitle()   const { return windowTitle; }
-		void				SetTitle(const std::string& title) {
-			windowTitle = title;
-			UpdateTitle();
-		};
+  float GetScreenAspect() const { return (float)size.x / (float)size.y; }
 
-		virtual void	LockMouseToWindow(bool lock) {};
-		virtual void	ShowOSPointer(bool show) {};
+  Vector2i GetScreenSize() const { return size; }
+  Vector2i GetScreenPosition() const { return position; }
 
-		virtual void	SetWindowPosition(int x, int y) {};
-		virtual void	SetFullScreen(bool state) {};
-		virtual void	SetConsolePosition(int x, int y) {};
-		virtual void	ShowConsole(bool state) {};
+  const std::string &GetTitle() const { return windowTitle; }
+  void SetTitle(const std::string &title) {
+    windowTitle = title;
+    UpdateTitle();
+  };
 
-		static const Keyboard*	 GetKeyboard() { return keyboard; }
-		static const Mouse*		 GetMouse() { return mouse; }
-		static const GameTimer&	 GetTimer() { return timer; }
+  virtual void LockMouseToWindow(bool lock) {};
+  virtual void ShowOSPointer(bool show) {};
 
-		static Window*	const GetWindow() { return window; }
+  virtual void SetWindowPosition(int x, int y) {};
+  virtual void SetFullScreen(bool state) {};
+  virtual void SetConsolePosition(int x, int y) {};
+  virtual void ShowConsole(bool state) {};
 
-		void SetWindowEventHandler(const WindowEventHandler& e) {
-			eventHandler = e;
-		}
-	protected:
-		Window();
-		virtual ~Window();
+  static const Keyboard *GetKeyboard() { return keyboard; }
+  static const Mouse *GetMouse() { return mouse; }
+  static const GameTimer &GetTimer() { return timer; }
 
-		virtual void UpdateTitle() {}
+  static Window *const GetWindow() { return window; }
 
-		virtual bool InternalUpdate() = 0;
+  void SetWindowEventHandler(const WindowEventHandler &e) { eventHandler = e; }
 
-		WindowEventHandler eventHandler;
+protected:
+  Window();
+  virtual ~Window();
 
-		bool				minimised;
-		bool				init;
-		Vector2i			position;
-		Vector2i			size;
-		Vector2i			defaultSize;
+  virtual void UpdateTitle() {}
 
-		std::string			windowTitle;
+  virtual bool InternalUpdate() = 0;
 
-		static Window*		window;
-		static Keyboard*	keyboard;
-		static Mouse*		mouse;
+  WindowEventHandler eventHandler;
 
-		static GameTimer	timer;
-	};
-}
+  bool minimised;
+  bool init;
+  bool shouldClose = false;
+  Vector2i position;
+  Vector2i size;
+  Vector2i defaultSize;
+
+  std::string windowTitle;
+
+  static Window *window;
+  static Keyboard *keyboard;
+  static Mouse *mouse;
+
+  static GameTimer timer;
+};
+} // namespace NCL

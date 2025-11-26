@@ -13,7 +13,6 @@ using namespace Win32Code;
 #define WINDOWCLASS "WindowClass"
 
 Win32Window::Win32Window(const WindowInitialisation &winInitInfo) {
-  forceQuit = false;
   init = false;
   mouseLeftWindow = false;
   lockMouse = false;
@@ -127,7 +126,7 @@ bool Win32Window::InternalUpdate() {
     CheckMessages(msg);
   }
 
-  return !forceQuit;
+  return !shouldClose;
 }
 
 void Win32Window::UpdateTitle() {
@@ -196,7 +195,7 @@ void Win32Window::CheckMessages(MSG &msg) {
   case (WM_CLOSE): { // Have We Received A Quit Message?
     thisWindow->ShowOSPointer(true);
     thisWindow->LockMouseToWindow(false);
-    forceQuit = true;
+    shouldClose = true;
   } break;
   case (WM_INPUT): {
     UINT dwSize;
@@ -248,7 +247,7 @@ LRESULT CALLBACK Win32Window::WindowProc(HWND hWnd, UINT message, WPARAM wParam,
     thisWindow->LockMouseToWindow(false);
 
     PostQuitMessage(0);
-    thisWindow->forceQuit = true;
+    thisWindow->shouldClose = true;
   } break;
   case (WM_ACTIVATE): {
     if (LOWORD(wParam) == WA_INACTIVE) {
