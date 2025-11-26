@@ -393,54 +393,10 @@ bool CollisionDetection::AABBOBBIntersection(const AABBVolume &volumeA,
                                              const OBBVolume &volumeB,
                                              const Transform &worldTransformB,
                                              CollisionInfo &collisionInfo) {
-  auto aBoxPos = worldTransformA.GetPosition();
-  auto aBoxSize = volumeA.GetHalfDimensions();
+  OBBVolume boxA(volumeA.GetHalfDimensions());
 
-  auto bBoxPos = worldTransformB.GetPosition();
-  auto bBoxSizeUnrot = volumeB.GetHalfDimensions();
-
-  auto bRot = worldTransformB.GetOrientation();
-
-  auto bBoxSize =
-      Vector3(abs(bBoxSizeUnrot.x * bRot.w) + abs(bBoxSizeUnrot.y * bRot.z) +
-                  abs(bBoxSizeUnrot.z * bRot.y),
-              abs(bBoxSizeUnrot.x * bRot.z) + abs(bBoxSizeUnrot.y * bRot.w) +
-                  abs(bBoxSizeUnrot.z * bRot.x),
-              abs(bBoxSizeUnrot.x * bRot.y) + abs(bBoxSizeUnrot.y * bRot.x) +
-                  abs(bBoxSizeUnrot.z * bRot.w));
-
-  auto toB = aBoxPos - bBoxPos;
-
-  auto xAxis = bRot * Vector3(1, 0, 0);
-  auto yAxis = bRot * Vector3(0, 1, 0);
-  auto zAxis = bRot * Vector3(0, 0, 1);
-
-  constexpr Vector3 Y(0, 1, 0);
-  constexpr Vector3 X(1, 0, 0);
-  constexpr Vector3 Z(0, 0, 1);
-
-  auto getSeparatingPlane = [&](const Vector3 &axis) -> float {
-    return (fabs(Vector::Dot(toB, axis)) >
-            (fabs(Vector::Dot((X * aBoxSize.x), axis)) +
-             fabs(Vector::Dot((Y * aBoxSize.y), axis)) +
-             fabs(Vector::Dot((Z * aBoxSize.z), axis)) +
-             fabs(Vector::Dot((xAxis * bBoxSize.x), axis)) +
-             fabs(Vector::Dot((yAxis * bBoxSize.y), axis)) +
-             fabs(Vector::Dot((zAxis * bBoxSize.z), axis))));
-  };
-
-  return !(getSeparatingPlane(X) || getSeparatingPlane(Y) ||
-           getSeparatingPlane(Z) || getSeparatingPlane(xAxis) ||
-           getSeparatingPlane(yAxis) || getSeparatingPlane(zAxis) ||
-           getSeparatingPlane(Vector::Cross(X, xAxis)) ||
-           getSeparatingPlane(Vector::Cross(X, yAxis)) ||
-           getSeparatingPlane(Vector::Cross(X, zAxis)) ||
-           getSeparatingPlane(Vector::Cross(Y, xAxis)) ||
-           getSeparatingPlane(Vector::Cross(Y, yAxis)) ||
-           getSeparatingPlane(Vector::Cross(Y, zAxis)) ||
-           getSeparatingPlane(Vector::Cross(Z, xAxis)) ||
-           getSeparatingPlane(Vector::Cross(Z, yAxis)) ||
-           getSeparatingPlane(Vector::Cross(Z, zAxis)));
+  return OBBIntersection(boxA, worldTransformB, volumeB, worldTransformA,
+                         collisionInfo);
 }
 
 bool CollisionDetection::AABBCapsuleIntersection(
@@ -455,56 +411,25 @@ bool CollisionDetection::OBBIntersection(const OBBVolume &volumeA,
                                          const OBBVolume &volumeB,
                                          const Transform &worldTransformB,
                                          CollisionInfo &collisionInfo) {
-  auto aBoxPos = worldTransformA.GetPosition();
-  auto aBoxSize = volumeA.GetHalfDimensions();
-
+  auto aPos = worldTransformA.GetPosition();
+  auto aSize = volumeA.GetHalfDimensions();
   auto aRot = worldTransformA.GetOrientation();
 
-  auto X = aRot * Vector3(1, 0, 0);
-  auto Y = aRot * Vector3(0, 1, 0);
-  auto Z = aRot * Vector3(0, 0, 1);
-
-  auto bBoxPos = worldTransformB.GetPosition();
-  auto bBoxSizeUnrot = volumeB.GetHalfDimensions();
-
+  auto bPos = worldTransformB.GetPosition();
+  auto bSize = volumeB.GetHalfDimensions();
   auto bRot = worldTransformB.GetOrientation();
 
-  auto bBoxSize =
-      Vector3(abs(bBoxSizeUnrot.x * bRot.w) + abs(bBoxSizeUnrot.y * bRot.z) +
-                  abs(bBoxSizeUnrot.z * bRot.y),
-              abs(bBoxSizeUnrot.x * bRot.z) + abs(bBoxSizeUnrot.y * bRot.w) +
-                  abs(bBoxSizeUnrot.z * bRot.x),
-              abs(bBoxSizeUnrot.x * bRot.y) + abs(bBoxSizeUnrot.y * bRot.x) +
-                  abs(bBoxSizeUnrot.z * bRot.w));
+  auto relPos = bPos - aPos;
 
-  auto toB = aBoxPos - bBoxPos;
+  constexpr Vector3 UP(0, 1, 0);
+  constexpr Vector3 RIGHT(1, 0, 0);
+  constexpr Vector3 FORWARD(0, 0, 1);
 
-  auto xAxis = bRot * Vector3(1, 0, 0);
-  auto yAxis = bRot * Vector3(0, 1, 0);
-  auto zAxis = bRot * Vector3(0, 0, 1);
+  auto aAxes = Quaternion::RotationMatrix<Matrix3>(aRot);
+  auto bAxes = Quaternion::RotationMatrix<Matrix3>(bRot);
 
-  auto getSeparatingPlane = [&](const Vector3 &axis) -> float {
-    return (fabs(Vector::Dot(toB, axis)) >
-            (fabs(Vector::Dot((X * aBoxSize.x), axis)) +
-             fabs(Vector::Dot((Y * aBoxSize.y), axis)) +
-             fabs(Vector::Dot((Z * aBoxSize.z), axis)) +
-             fabs(Vector::Dot((xAxis * bBoxSize.x), axis)) +
-             fabs(Vector::Dot((yAxis * bBoxSize.y), axis)) +
-             fabs(Vector::Dot((zAxis * bBoxSize.z), axis))));
-  };
-
-  return !(getSeparatingPlane(X) || getSeparatingPlane(Y) ||
-           getSeparatingPlane(Z) || getSeparatingPlane(xAxis) ||
-           getSeparatingPlane(yAxis) || getSeparatingPlane(zAxis) ||
-           getSeparatingPlane(Vector::Cross(X, xAxis)) ||
-           getSeparatingPlane(Vector::Cross(X, yAxis)) ||
-           getSeparatingPlane(Vector::Cross(X, zAxis)) ||
-           getSeparatingPlane(Vector::Cross(Y, xAxis)) ||
-           getSeparatingPlane(Vector::Cross(Y, yAxis)) ||
-           getSeparatingPlane(Vector::Cross(Y, zAxis)) ||
-           getSeparatingPlane(Vector::Cross(Z, xAxis)) ||
-           getSeparatingPlane(Vector::Cross(Z, yAxis)) ||
-           getSeparatingPlane(Vector::Cross(Z, zAxis)));
+  // TODO: Implement full OBB-OBB collision detection using SAT
+  return false;
 }
 
 bool CollisionDetection::OBBSphereIntersection(const OBBVolume &volumeA,

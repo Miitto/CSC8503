@@ -30,7 +30,8 @@ public:
           NCL::CollisionDetection::BuildRayFromMouse(world->GetMainCamera());
 
       RayCollision closestCollision;
-      if (world->Raycast(ray, closestCollision, true)) {
+      if (currentCorner != None &&
+          world->Raycast(ray, closestCollision, true)) {
         auto node =
             static_cast<NCL::CSC8503::GameObject *>(closestCollision.node);
         auto offset =
@@ -51,7 +52,7 @@ public:
           toActivate = constraints.br;
           break;
         case None:
-          break; // NOOP
+          break; // NOOP, unreachable
         }
 
         NCL::Maths::Vector3 pos =
@@ -129,7 +130,7 @@ protected:
     }
   }
 
-  Corner currentCorner = FrontLeft;
+  Corner currentCorner = None;
   void NextCorner() {
     auto next = currentCorner + 1;
     if (next > BackRight) {

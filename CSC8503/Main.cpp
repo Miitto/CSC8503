@@ -96,6 +96,88 @@ void DisplayPathfinding() {
   }
 }
 
+void TestBehaviourTree() {
+  float timer = 0.0f;
+  float distatnceToTarget;
+
+  BehaviourAction *findKey = new BehaviourAction(
+      "Find Key", [&](float dt, BehaviourState state) -> BehaviourState {
+        if (state == BehaviourState::Initialise) {
+          std::cout << "Finding Key..." << std::endl;
+          timer = rand() % 100;
+          state = BehaviourState::Ongoing;
+        } else if (state == BehaviourState::Ongoing) {
+          timer -= dt;
+          if (timer <= 0.0f) {
+            std::cout << "Found Key!\n";
+            return BehaviourState::Success;
+          }
+          return state;
+        }
+      });
+
+  BehaviourAction *goToRoom = new BehaviourAction(
+      "Go To Room", [&](float dt, BehaviourState state) -> BehaviourState {
+        if (state == BehaviourState::Initialise) {
+          std::cout << "Going to Room..." << std::endl;
+          state = BehaviourState::Ongoing;
+        } else if (state == BehaviourState::Ongoing) {
+          distatnceToTarget -= dt;
+          if (distatnceToTarget <= 0.0f) {
+            std::cout << "Reached Room!\n";
+            return BehaviourState::Success;
+          }
+          return state;
+        }
+      });
+
+  BehaviourAction *openDoor = new BehaviourAction(
+      "Open Door", [&](float dt, BehaviourState state) -> BehaviourState {
+        if (state == BehaviourState::Initialise) {
+          std::cout << "Opening Door..." << std::endl;
+          return BehaviourState::Success;
+        }
+        return state;
+      });
+
+  BehaviourAction *lookForTreasure = new BehaviourAction(
+      "Look For Treasure",
+      [&](float dt, BehaviourState state) -> BehaviourState {
+        if (state == BehaviourState::Initialise) {
+          std::cout << "Looking for Treasure..." << std::endl;
+          return BehaviourState::Ongoing;
+        } else if (state == BehaviourState::Ongoing) {
+          bool found = rand() % 2;
+          if (found) {
+            std::cout << "Found Treasure!\n";
+            return BehaviourState::Success;
+          } else {
+            std::cout << "Couldn't find Treasure.\n";
+            return BehaviourState::Failure;
+          }
+        }
+      });
+
+  BehaviourAction *lookForItems = new BehaviourAction(
+      "Look For Items", [&](float dt, BehaviourState state) -> BehaviourState {
+        if (state == BehaviourState::Initialise) {
+          std::cout << "Looking for Items..." << std::endl;
+          return BehaviourState::Ongoing;
+        } else if (state == BehaviourState::Ongoing) {
+          bool found = rand() % 2;
+          if (found) {
+            std::cout << "Found Items!\n";
+            return BehaviourState::Success;
+          } else {
+            std::cout << "Couldn't find Items.\n";
+            return BehaviourState::Failure;
+          }
+        }
+      });
+
+  BehaviourSequence *sequence = new BehaviourSequence("Room Sequence")
+}
+
 /*
 
 The main function should look pretty familar to you!

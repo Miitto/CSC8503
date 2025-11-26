@@ -28,6 +28,7 @@ public:
 protected:
   void InitCamera();
 
+  void Clear();
   void InitWorld();
   void InitCollisionTest();
 
@@ -59,6 +60,9 @@ protected:
                              NCL::Maths::Vector3 dimensions,
                              float inverseMass = 10.0f,
                              GameObject *obj = new GameObject());
+  GameObject *AddOBBToWorld(const NCL::Maths::Vector3 &position,
+                            NCL::Maths::Vector3 dimensions,
+                            float inverseMass = 10.0f);
 
   StateGameObject *AddStateObjectToWorld(const NCL::Maths::Vector3 &position);
 

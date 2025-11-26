@@ -245,9 +245,17 @@ void TutorialGame::InitCamera() {
   world.GetMainCamera().SetPosition(Vector3(-60, 40, 60));
 }
 
-void TutorialGame::InitWorld() {
+void TutorialGame::Clear() {
   world.ClearAndErase();
   physics.Clear();
+
+  selectionObject = nullptr;
+  objClosest = nullptr;
+  pane = nullptr;
+}
+
+void TutorialGame::InitWorld() {
+  Clear();
 
   CreatedMixedGrid(15, 15, 5.f, 5.f);
 
@@ -258,16 +266,15 @@ void TutorialGame::InitWorld() {
   BridgeConstraintTest();
 
   AddStateObjectToWorld(Vector3(50, 50, 50));
-  // pane = AddPaneToWorld(Vector3(0, 10, -20), Vector2(4, 2), .5f);
-  // pane->SetupConstraints(world);
+  pane = AddPaneToWorld(Vector3(0, 10, -20), Vector2(4, 2), .5f);
+  pane->SetupConstraints(world);
 
   AddCubeToWorld(Vector3(0, 20, -20), Vector3(2, 2, 2), 0.0f,
                  new Oscillator({{0, 20, -20}, {}}, {{0, 40, -20}, {}}, 10.f));
 }
 
 void TutorialGame::InitCollisionTest() {
-  world.ClearAndErase();
-  physics.Clear();
+  Clear();
 
   AddFloorToWorld(Vector3(0, -20, 0));
   AddSphereToWorld(Vector3(0, 0, 0), 1.0f, 10.0f);
@@ -276,6 +283,8 @@ void TutorialGame::InitCollisionTest() {
   AddSphereToWorld(Vector3(5, 0, 0), 1.0f, 10.0f);
   AddSphereToWorld(Vector3(10, 0, 0), 1.0f, 10.0f);
   AddSphereToWorld(Vector3(15, 0, 0), 1.0f, 10.0f);
+
+  AddOBBToWorld(Vector3(0, 0, 5), Vector3(1, 1, 1), 10.0f);
 }
 
 #pragma region World Building Functions
@@ -356,6 +365,22 @@ GameObject *TutorialGame::AddCubeToWorld(const Vector3 &position,
   world.AddGameObject(cube);
 
   return cube;
+}
+
+GameObject *TutorialGame::AddOBBToWorld(const Vector3 &position,
+                                        Vector3 dimensions, float inverseMass) {
+  GameObject *obb = new GameObject();
+  OBBVolume *volume = new OBBVolume(dimensions);
+  obb->SetBoundingVolume(volume);
+  obb->GetTransform().SetPosition(position).SetScale(dimensions * 2.0f);
+  obb->SetRenderObject(
+      new RenderObject(obb->GetTransform(), cubeMesh, checkerMaterial));
+  obb->SetPhysicsObject(
+      new PhysicsObject(obb->GetTransform(), obb->GetBoundingVolume()));
+  obb->GetPhysicsObject()->SetInverseMass(inverseMass);
+  obb->GetPhysicsObject()->InitCubeInertia();
+  world.AddGameObject(obb);
+  return obb;
 }
 
 StateGameObject *TutorialGame::AddStateObjectToWorld(const Vector3 &position) {
