@@ -15,7 +15,7 @@ public:
   ~NetworkedGame();
 
   void StartAsServer();
-  void StartAsClient(char a, char b, char c, char d);
+  void StartAsClient(uint8_t a, uint8_t b, uint8_t c, uint8_t d);
 
   void UpdateGame(float dt) override;
 

@@ -1,25 +1,28 @@
 #pragma once
 #include "NetworkBase.h"
+#include <atomic>
 #include <stdint.h>
 #include <thread>
-#include <atomic>
+
+#include "ip.h"
 
 namespace NCL {
-	namespace CSC8503 {
-		class GameObject;
-		class GameClient : public NetworkBase {
-		public:
-			GameClient();
-			~GameClient();
+namespace CSC8503 {
+class GameObject;
+class GameClient : public NetworkBase {
+public:
+  GameClient();
+  ~GameClient();
 
-			bool Connect(uint8_t a, uint8_t b, uint8_t c, uint8_t d, int portNum);
+  bool Connect(IP ip);
 
-			void SendPacket(GamePacket&  payload);
+  void SendPacket(GamePacket &payload);
+  void SendPacket(GamePacket &&payload);
 
-			void UpdateClient();
-		protected:	
-			_ENetPeer*	netPeer;
-		};
-	}
-}
+  void UpdateClient();
 
+protected:
+  _ENetPeer *netPeer;
+};
+} // namespace CSC8503
+} // namespace NCL

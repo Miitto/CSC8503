@@ -5,25 +5,35 @@
 #include "Window.h"
 #include "collisions/CollisionDetection.h"
 #include "constraints/OffsetTiedConstraint.h"
-#include <imgui/imgui.h>
+#include "gui.h"
 
 class Pane : public NCL::CSC8503::GameObject {
 public:
   Pane(NCL::CSC8503::GameWorld *world) : GameObject("Pane"), world(world) {}
 
   void Update(float dt) override {
-    if (NCL::Window::GetKeyboard()->KeyPressed(NCL::KeyCodes::T)) {
+    if (NCL::Window::GetKeyboard()->KeyPressed(NCL::KeyCodes::C)) {
       NextCorner();
     }
 
-    ImGui::Begin("Pane Controls");
+    {
+      auto frame = NCL::gui::Frame("Pane Controls");
 
-    constexpr const char *cornerNames[] = {
-        "None", "Front Left", "Front Right", "Back Left", "Back Right",
-    };
+      constexpr const char *cornerNames[] = {
+          "None", "Front Left", "Front Right", "Back Left", "Back Right",
+      };
 
-    ImGui::Text("Current Corner: %s", cornerNames[currentCorner]);
-    ImGui::End();
+      if (ImGui::BeginCombo("Current Corner",
+                            cornerNames[static_cast<int>(currentCorner)])) {
+        for (int i = 0; i <= BackRight; ++i) {
+          bool isSelected = (currentCorner == static_cast<Corner>(i));
+          if (ImGui::Selectable(cornerNames[i], isSelected)) {
+            currentCorner = static_cast<Corner>(i);
+          }
+        }
+        ImGui::EndCombo();
+      }
+    }
 
     if (NCL::Window::GetMouse()->ButtonDown(NCL::MouseButtons::Left)) {
       Ray ray =

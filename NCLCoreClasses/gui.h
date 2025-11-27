@@ -5,7 +5,8 @@
 namespace NCL::gui {
 class Frame {
 public:
-  Frame(const char *const name, bool *p_open, ImGuiWindowFlags flags) {
+  Frame(const char *const name, bool *p_open = nullptr,
+        ImGuiWindowFlags flags = 0) {
     ImGui::Begin(name, p_open, flags);
   }
 
