@@ -28,7 +28,7 @@ public:
     NCL::Window::GetWindow()->LockMouseToWindow(true);
   }
 
-  void OnSleep() override { game.Clear(); }
+  void OnDestroy() override { game.Clear(); }
 
 protected:
   TutorialGame &game;

@@ -16,7 +16,7 @@ bool PushdownMachine::Update(float dt) {
 
     switch (result) {
     case PushdownState::Pop: {
-      activeState->OnSleep();
+      activeState->OnDestroy();
       delete activeState;
       stateStack.pop();
       if (stateStack.empty()) {
@@ -31,18 +31,17 @@ bool PushdownMachine::Update(float dt) {
 
       stateStack.push(newState);
       activeState = newState;
-      activeState->OnAwake();
+      activeState->OnInit();
     } break;
     case PushdownState::Reset: {
-      activeState->OnSleep();
       Reset();
     } break;
     case PushdownState::Replace: {
-      activeState->OnSleep();
+      activeState->OnDestroy();
       activeState = newState;
       stateStack.pop();
       stateStack.push(activeState);
-      activeState->OnAwake();
+      activeState->OnInit();
     } break;
     }
   } else {
@@ -56,6 +55,7 @@ bool PushdownMachine::Update(float dt) {
 void PushdownMachine::Reset() {
   while (stateStack.size() > 1) {
     auto s = stateStack.top();
+    s->OnDestroy();
     delete s;
     stateStack.pop();
   }

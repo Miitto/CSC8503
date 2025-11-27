@@ -9,10 +9,10 @@ public:
   virtual ~PushdownState() {}
 
   virtual PushdownResult OnUpdate(float dt, PushdownState **pushFunc) = 0;
+  virtual void OnInit() {}
   virtual void OnAwake() {}
   virtual void OnSleep() {}
-
-protected:
+  virtual void OnDestroy() {}
 };
 } // namespace CSC8503
 } // namespace NCL

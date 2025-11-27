@@ -6,7 +6,7 @@ class DefaultScene : public IScene {
 public:
   DefaultScene(TutorialGame &game) : IScene(game) {}
 
-  void OnAwake() override {
+  void OnInit() override {
     IScene::OnAwake();
     game.InitWorld();
   }

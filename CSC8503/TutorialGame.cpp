@@ -74,7 +74,6 @@ TutorialGame::TutorialGame(GameWorld &inWorld,
   glassMaterial.diffuseTex = glassTex;
 
   InitCamera();
-  InitWorld();
 }
 
 TutorialGame::~TutorialGame() {}

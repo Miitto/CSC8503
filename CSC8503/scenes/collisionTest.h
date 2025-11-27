@@ -6,7 +6,7 @@ class CollisionTestScene : public IScene {
 public:
   CollisionTestScene(TutorialGame &game) : IScene(game) {}
 
-  void OnAwake() override {
+  void OnInit() override {
     IScene::OnAwake();
     game.InitCollisionTest();
   }

@@ -14,6 +14,11 @@ public:
 
     PushdownResult result = NoChange;
 
+    auto &io = ImGui::GetIO();
+    ImGui::SetNextWindowPos(
+        ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f),
+        ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+
     auto frame = NCL::gui::Frame("Paused", nullptr,
                                  ImGuiWindowFlags_AlwaysAutoResize |
                                      ImGuiWindowFlags_NoDecoration);
@@ -30,10 +35,10 @@ public:
     return result;
   }
 
+  void OnInit() override { OnAwake(); }
+
   void OnAwake() override {
     NCL::Window::GetWindow()->ShowOSPointer(true);
     NCL::Window::GetWindow()->LockMouseToWindow(false);
   }
-
-  void OnSleep() override {}
 };
