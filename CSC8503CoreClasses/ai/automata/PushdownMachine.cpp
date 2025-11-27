@@ -65,7 +65,7 @@ void PushdownMachine::Reset() {
   activeState = stateStack.top();
   activeState->OnAwake();
 
-  assert(stateStack.size() == 1, "PushdownMachine::Reset: Stack size != 1");
-  assert(activeState == initialState,
+  assert(stateStack.size() == 1 && "PushdownMachine::Reset: Stack size != 1");
+  assert(activeState == initialState &&
          "PushdownMachine::Reset: Active state != initial state");
 }

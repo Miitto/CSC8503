@@ -90,6 +90,12 @@ set(Constraints
 )
 source_group("Physics\\Constraints" FILES ${Constraints})
 
+set(LOGGING 
+  "logging/logger.h"
+  "logging/logger.cpp"
+)
+source_group("Logging" FILES ${LOGGING})
+
 set(Header_Files
     "Debug.h"
     "GameObject.h"
@@ -141,6 +147,7 @@ set(ALL_FILES
     ${Networking}
     ${Physics}
     ${Constraints}
+    ${LOGGING}
     ${enet_Files}   
 )
 
@@ -211,3 +218,6 @@ include_directories("./")
 if(MSVC)
     target_link_libraries(${PROJECT_NAME} PRIVATE "ws2_32.lib")
 endif()
+
+include(spdlog)
+LINK_SPDLOG(${PROJECT_NAME} PUBLIC)

@@ -34,6 +34,8 @@ PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
 #include <imgui/backends/imgui_impl_win32.h>
 #endif
 
+#include "logging/glLogger.h"
+
 using namespace NCL;
 using namespace NCL::Rendering;
 
@@ -116,7 +118,7 @@ void OGLRenderer::BindBufferAsSSBO(const OGLBuffer &b, GLuint slotID) {
 
 void OGLRenderer::UseShader(const OGLShader &oglShader) {
   if (!oglShader.LoadSuccess()) {
-    std::cout << __FUNCTION__ << ": shader has failed to load correctly!\n";
+    GL_ERROR("Shader has failed to load correctly!");
     activeShader = nullptr;
     return;
   }
@@ -126,7 +128,7 @@ void OGLRenderer::UseShader(const OGLShader &oglShader) {
 
 void OGLRenderer::BindMesh(const OGLMesh &m) {
   if (m.GetVAO() == 0) {
-    std::cout << __FUNCTION__ << ": Mesh has not been uploaded!\n";
+    GL_ERROR("Mesh has not been uploaded!");
   }
   glBindVertexArray(m.GetVAO());
   boundMesh = &m;
@@ -134,11 +136,11 @@ void OGLRenderer::BindMesh(const OGLMesh &m) {
 
 void OGLRenderer::DrawBoundMesh(int subLayer, int numInstances) {
   if (!boundMesh) {
-    std::cout << __FUNCTION__ << " has been called without a bound mesh!\n";
+    GL_ERROR(__FUNCTION__ " has been called without a bound mesh!");
     return;
   }
   if (!activeShader) {
-    std::cout << __FUNCTION__ << " has been called without a bound shader!\n";
+    GL_ERROR(__FUNCTION__ " has been called without a bound shader!");
     return;
   }
   GLuint mode = 0;
@@ -188,7 +190,7 @@ void OGLRenderer::BindTextureToShader(const OGLTexture &t,
   GLint texID = t.GetObjectID();
 
   if (!activeShader) {
-    std::cout << __FUNCTION__ << " has been called without a bound shader!\n";
+    GL_ERROR(__FUNCTION__ " has been called without a bound shader!");
     return; // Debug message time!
   }
 
@@ -211,7 +213,7 @@ void OGLRenderer::InitWithWin32(Window &w) {
   Win32Code::Win32Window *realWindow = (Win32Code::Win32Window *)&w;
 
   if (!(deviceContext = GetDC(realWindow->GetHandle()))) {
-    std::cout << __FUNCTION__ << " Failed to create window!\n";
+    GL_ERROR(__FUNCTION__ " Failed to create window!");
     return;
   }
 
@@ -328,8 +330,7 @@ void OGLRenderer::InitWithWin32(Window &w) {
   wglDeleteContext(tempContext); // We don't need the temporary context any
                                  // more!
 
-  std::cout << __FUNCTION__ << " Initialised OpenGL " << major << "." << minor
-            << " rendering context" << std::endl; // It's all gone wrong!
+  GL_LOG(__FUNCTION__ " Initialised OpenGL {}.{}", major, minor);
 
   glEnable(GL_FRAMEBUFFER_SRGB);
 
@@ -401,27 +402,6 @@ static void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id,
     break;
   }
 
-  switch (type) {
-  case GL_DEBUG_TYPE_ERROR:
-    typeName = "Type(Error)";
-    break;
-  case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-    typeName = "Type(Deprecated Behaviour)";
-    break;
-  case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-    typeName = "Type(Undefined Behaviour)";
-    break;
-  case GL_DEBUG_TYPE_PORTABILITY:
-    typeName = "Type(Portability)";
-    break;
-  case GL_DEBUG_TYPE_PERFORMANCE:
-    typeName = "Type(Performance)";
-    break;
-  case GL_DEBUG_TYPE_OTHER:
-    typeName = "Type(Other)";
-    break;
-  }
-
   switch (severity) {
   case GL_DEBUG_SEVERITY_HIGH:
     severityName = "Priority(High)";
@@ -434,8 +414,31 @@ static void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id,
     break;
   }
 
-  std::cout << "OpenGL Debug Output: " + sourceName + ", " + typeName + ", " +
-                   severityName + ", " + string(message) + "\n";
+  switch (type) {
+  case GL_DEBUG_TYPE_ERROR:
+    GL_ERROR("OpenGL Error: {}, {}, {}", sourceName, severityName, message);
+    return;
+  case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+    GL_WARN("OpenGL Deprecated Behaviour: {}, {}, {}", sourceName, severityName,
+            message);
+    return;
+  case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+    GL_WARN("OpenGL Undefined Behaviour: {}, {}, {}", sourceName, severityName,
+            message);
+    return;
+  case GL_DEBUG_TYPE_PORTABILITY:
+    typeName = "Type(Portability)";
+    break;
+  case GL_DEBUG_TYPE_PERFORMANCE:
+    typeName = "Type(Performance)";
+    break;
+  case GL_DEBUG_TYPE_OTHER:
+    typeName = "Type(Other)";
+    break;
+  }
+
+  GL_DEBUG("OpenGL Undefined Behaviour: {}, {}, {}, {}", sourceName, typeName,
+           severityName, message);
 }
 #endif
 

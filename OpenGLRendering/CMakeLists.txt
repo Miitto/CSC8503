@@ -4,6 +4,7 @@ set(PROJECT_NAME OpenGLRendering)
 # Source groups
 ################################################################################
 set(Header_Files
+    "logging/glLogger.h"
     "OGLTexture.h"
     "OGLShader.h"
     "OGLRenderer.h"
@@ -13,6 +14,7 @@ set(Header_Files
 source_group("Header Files" FILES ${Header_Files})
 
 set(Source_Files
+    "logging/glLogger.cpp"
     "OGLTexture.cpp"
     "OGLShader.cpp"
     "OGLRenderer.cpp"
@@ -76,3 +78,6 @@ set(ADDITIONAL_LIBRARY_DEPENDENCIES
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
+
+include(spdlog)
+LINK_SPDLOG(${PROJECT_NAME} PRIVATE)

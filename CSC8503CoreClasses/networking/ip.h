@@ -1,5 +1,6 @@
 #pragma once
 
+#include <spdlog/fmt/bundled/format.h>
 #include <string>
 
 namespace NCL {
@@ -31,3 +32,10 @@ protected:
   uint16_t p;
 };
 } // namespace NCL
+
+template <> struct fmt::formatter<NCL::IP> : fmt::formatter<std::string> {
+  template <typename FormatContext>
+  auto format(const NCL::IP &ip, FormatContext &ctx) {
+    return fmt::formatter<std::string>::format(std::string(ip), ctx);
+  }
+};

@@ -4,7 +4,9 @@ struct _ENetHost;
 struct _ENetPeer;
 struct _ENetEvent;
 
-enum BasicNetworkMessages {
+#include <spdlog/fmt/bundled/format.h>
+
+enum class BasicNetworkMessages : uint16_t {
   None,
   Hello,
   Message,
@@ -14,26 +16,91 @@ enum BasicNetworkMessages {
   Received_State, // received from a client, informs that its received packet n
   Player_Connected,
   Player_Disconnected,
-  Shutdown
+  Shutdown,
+  BUILTIN_MAX
+};
+
+struct GamePacketType {
+  uint16_t type;
+
+  GamePacketType(
+      uint16_t type = static_cast<uint16_t>(BasicNetworkMessages::None))
+      : type(type) {}
+  GamePacketType(BasicNetworkMessages type)
+      : type(static_cast<uint16_t>(type)) {}
+
+  operator uint16_t() const { return type; }
+  template <typename T> bool operator==(const T &b) const {
+    return type == static_cast<uint16_t>(b);
+  }
+  template <typename T> auto operator<=>(const T &b) const {
+    return type <=> static_cast<uint16_t>(b);
+  }
+};
+
+template <>
+struct fmt::formatter<GamePacketType> : fmt::formatter<std::string> {
+  template <typename FormatContext>
+  auto format(const GamePacketType &msgType, FormatContext &ctx) {
+    std::string typeName;
+    switch (msgType.type) {
+    case BasicNetworkMessages::None:
+      typeName = "None";
+      break;
+    case BasicNetworkMessages::Hello:
+      typeName = "Hello";
+      break;
+    case BasicNetworkMessages::Message:
+      typeName = "Message";
+      break;
+    case BasicNetworkMessages::String_Message:
+      typeName = "String_Message";
+      break;
+    case BasicNetworkMessages::Delta_State:
+      typeName = "Delta_State";
+      break;
+    case BasicNetworkMessages::Full_State:
+      typeName = "Full_State";
+      break;
+    case BasicNetworkMessages::Received_State:
+      typeName = "Received_State";
+      break;
+    case BasicNetworkMessages::Player_Connected:
+      typeName = "Player_Connected";
+      break;
+    case BasicNetworkMessages::Player_Disconnected:
+      typeName = "Player_Disconnected";
+      break;
+    case BasicNetworkMessages::Shutdown:
+      typeName = "Shutdown";
+      break;
+    default:
+      typeName = fmt::format("Custom: {}", msgType.type);
+      break;
+    }
+    return fmt::formatter<std::string>::format(typeName, ctx);
+  }
 };
 
 struct GamePacket {
-  short size;
-  short type;
+  uint16_t size = 0;
+  GamePacketType type = GamePacketType(BasicNetworkMessages::None);
 
-  GamePacket() {
-    type = BasicNetworkMessages::None;
-    size = 0;
-  }
-
-  GamePacket(short type) : GamePacket() { this->type = type; }
-
+  GamePacket(GamePacketType type = GamePacketType(BasicNetworkMessages::None),
+             uint16_t size = 0)
+      : type(type), size(size) {}
   int GetTotalSize() { return sizeof(GamePacket) + size; }
+
+  template <typename T>
+    requires std::is_base_of<GamePacket, T>::value
+  static T *as(GamePacket *base) {
+    return reinterpret_cast<T *>(base);
+  }
 };
 
 class PacketReceiver {
 public:
-  virtual void ReceivePacket(int type, GamePacket *payload,
+  virtual void ReceivePacket(GamePacketType type, GamePacket *payload,
                              int source = -1) = 0;
 };
 
@@ -42,10 +109,10 @@ public:
   static void Initialise();
   static void Destroy();
 
-  constexpr inline static int GetDefaultPort() { return 1234; }
+  constexpr inline static uint16_t GetDefaultPort() { return 1234; }
 
-  void RegisterPacketHandler(int msgID, PacketReceiver *receiver) {
-    packetHandlers.insert(std::make_pair(msgID, receiver));
+  void RegisterPacketHandler(GamePacketType type, PacketReceiver *receiver) {
+    packetHandlers.insert(std::make_pair(type, receiver));
   }
 
 protected:
@@ -54,22 +121,27 @@ protected:
 
   bool ProcessPacket(GamePacket *p, int peerID = -1);
 
-  typedef std::multimap<int, PacketReceiver *>::const_iterator
+  typedef std::multimap<GamePacketType, PacketReceiver *>::const_iterator
       PacketHandlerIterator;
 
-  bool GetPacketHandlers(int msgID, PacketHandlerIterator &first,
-                         PacketHandlerIterator &last) const {
+  struct IteratorRange {
+    PacketHandlerIterator first;
+    PacketHandlerIterator last;
+
+    PacketHandlerIterator begin() const { return first; }
+    PacketHandlerIterator end() const { return last; }
+  };
+
+  std::optional<IteratorRange> GetPacketHandlers(int msgID) const {
     auto range = packetHandlers.equal_range(msgID);
 
     if (range.first == packetHandlers.end()) {
-      return false; // no handlers for this message type!
+      return std::nullopt; // no handlers for this message type!
     }
-    first = range.first;
-    last = range.second;
-    return true;
+    return IteratorRange{.first = range.first, .last = range.second};
   }
 
   _ENetHost *netHandle;
 
-  std::multimap<int, PacketReceiver *> packetHandlers;
+  std::multimap<GamePacketType, PacketReceiver *> packetHandlers;
 };

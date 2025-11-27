@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
 
 set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake/")
+include(FetchContent)
+
 project(CSC8503)
 
 ################################################################################
@@ -91,6 +94,7 @@ add_subdirectory(CSC8503CoreClasses)
 add_subdirectory(CSC8503)
 add_subdirectory(GLTFLoader)
 add_subdirectory(vendor/imgui)
+
 
 if(USE_VULKAN)
     add_subdirectory(VulkanRendering)

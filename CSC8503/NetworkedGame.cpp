@@ -16,7 +16,7 @@ struct MessagePacket : public GamePacket {
   short messageID;
 
   MessagePacket() {
-    type = Message;
+    type = BasicNetworkMessages::Message;
     size = sizeof(short) * 2;
   }
 };
@@ -41,7 +41,7 @@ NetworkedGame::~NetworkedGame() {
 void NetworkedGame::StartAsServer() {
   thisServer = new GameServer(NetworkBase::GetDefaultPort(), 4);
 
-  thisServer->RegisterPacketHandler(Received_State, this);
+  thisServer->RegisterPacketHandler(BasicNetworkMessages::Received_State, this);
 
   StartLevel();
 }
@@ -50,10 +50,12 @@ void NetworkedGame::StartAsClient(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
   thisClient = new GameClient();
   thisClient->Connect({a, b, c, d, NetworkBase::GetDefaultPort()});
 
-  thisClient->RegisterPacketHandler(Delta_State, this);
-  thisClient->RegisterPacketHandler(Full_State, this);
-  thisClient->RegisterPacketHandler(Player_Connected, this);
-  thisClient->RegisterPacketHandler(Player_Disconnected, this);
+  thisClient->RegisterPacketHandler(BasicNetworkMessages::Delta_State, this);
+  thisClient->RegisterPacketHandler(BasicNetworkMessages::Full_State, this);
+  thisClient->RegisterPacketHandler(BasicNetworkMessages::Player_Connected,
+                                    this);
+  thisClient->RegisterPacketHandler(BasicNetworkMessages::Player_Disconnected,
+                                    this);
 
   StartLevel();
 }
@@ -154,7 +156,8 @@ void NetworkedGame::SpawnPlayer() {}
 
 void NetworkedGame::StartLevel() {}
 
-void NetworkedGame::ReceivePacket(int type, GamePacket *payload, int source) {}
+void NetworkedGame::ReceivePacket(GamePacketType type, GamePacket *payload,
+                                  int source) {}
 
 void NetworkedGame::OnPlayerCollision(NetworkPlayer *a, NetworkPlayer *b) {
   if (thisServer) { // detected a collision between players!

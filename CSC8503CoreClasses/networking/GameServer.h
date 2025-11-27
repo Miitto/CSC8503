@@ -14,7 +14,7 @@ public:
 
   void SetGameWorld(GameWorld &g);
 
-  bool SendGlobalPacket(int msgID);
+  bool SendGlobalPacket(GamePacketType type);
   bool SendGlobalPacket(GamePacket &packet);
   bool SendGlobalPacket(GamePacket &&packet);
 

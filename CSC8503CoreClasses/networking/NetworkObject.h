@@ -2,74 +2,91 @@
 #include "GameObject.h"
 #include "NetworkBase.h"
 #include "NetworkState.h"
+#include "logging/logger.h"
 
 namespace NCL::CSC8503 {
-	class GameObject;
+class GameObject;
 
-	struct FullPacket : public GamePacket {
-		int		objectID = -1;
-		NetworkState fullState;
+#pragma region Packets
+struct FullPacket : public GamePacket {
+  int objectID = -1;
+  NetworkState fullState;
 
-		FullPacket() {
-			type = Full_State;
-			size = sizeof(FullPacket) - sizeof(GamePacket);
-		}
-	};
+  FullPacket()
+      : GamePacket(BasicNetworkMessages::Full_State,
+                   sizeof(FullPacket) - sizeof(GamePacket)) {}
+};
 
-	struct DeltaPacket : public GamePacket {
-		int		fullID		= -1;
-		int		objectID	= -1;
-		char	pos[3];
-		char	orientation[4];
+struct DeltaPacket : public GamePacket {
+  int fullID = -1;
+  int objectID = -1;
+  char pos[3] = {0, 0, 0};
+  char orientation[4] = {0, 0, 0, 1};
 
-		DeltaPacket() {
-			type = Delta_State;
-			size = sizeof(DeltaPacket) - sizeof(GamePacket);
-		}
-	};
+  DeltaPacket()
+      : GamePacket(BasicNetworkMessages::Delta_State,
+                   sizeof(DeltaPacket) - sizeof(GamePacket)) {}
+};
 
-	struct ClientPacket : public GamePacket {
-		int		lastID;
-		char	buttonstates[8];
+struct ClientPacket : public GamePacket {
+  int lastID = 0;
+  char buttonstates[8] = {};
 
-		ClientPacket() {
-			size = sizeof(ClientPacket);
-		}
-	};
+  ClientPacket()
+      : GamePacket(BasicNetworkMessages::None, sizeof(ClientPacket)) {}
+};
 
-	class NetworkObject		{
-	public:
-		NetworkObject(GameObject& o, int id);
-		virtual ~NetworkObject();
+struct StringPacket : public GamePacket {
+  char data[256];
+  StringPacket(std::string_view str)
+      : GamePacket(BasicNetworkMessages::String_Message,
+                   static_cast<uint16_t>(str.length())) {
 
-		//Called by clients
-		virtual bool ReadPacket(GamePacket& p);
-		//Called by servers
-		virtual bool WritePacket(GamePacket** p, bool deltaFrame, int stateID);
+    NET_ASSERT(str.length() <= 256,
+               "String has too many characters for a single packet");
 
-		void UpdateStateHistory(int minID);
+    memcpy(data, str.data(), str.length());
+  }
 
-	protected:
+  std::string_view view() const { return std::string_view(data, size); }
+  std::string get() const { return std::string(data, size); }
+  operator std::string() const { return get(); }
+  operator std::string_view() const { return view(); }
+};
+#pragma endregion
 
-		NetworkState& GetLatestNetworkState();
+class NetworkObject {
+public:
+  NetworkObject(GameObject &o, int id);
+  virtual ~NetworkObject();
 
-		bool GetNetworkState(int frameID, NetworkState& state);
+  // Called by clients
+  virtual bool ReadPacket(GamePacket &p);
+  // Called by servers
+  virtual bool WritePacket(GamePacket **p, bool deltaFrame, int stateID);
 
-		virtual bool ReadDeltaPacket(DeltaPacket &p);
-		virtual bool ReadFullPacket(FullPacket &p);
+  void UpdateStateHistory(int minID);
 
-		virtual bool WriteDeltaPacket(GamePacket**p, int stateID);
-		virtual bool WriteFullPacket(GamePacket**p);
+protected:
+  NetworkState &GetLatestNetworkState();
 
-		GameObject& object;
+  bool GetNetworkState(int frameID, NetworkState &state);
 
-		NetworkState lastFullState;
+  virtual bool ReadDeltaPacket(DeltaPacket &p);
+  virtual bool ReadFullPacket(FullPacket &p);
 
-		std::vector<NetworkState> stateHistory;
+  virtual bool WriteDeltaPacket(GamePacket **p, int stateID);
+  virtual bool WriteFullPacket(GamePacket **p);
 
-		int deltaErrors;
-		int fullErrors;
+  GameObject &object;
 
-		int networkID;
-	};
-}
+  NetworkState lastFullState;
+
+  std::vector<NetworkState> stateHistory;
+
+  int deltaErrors;
+  int fullErrors;
+
+  int networkID;
+};
+} // namespace NCL::CSC8503

@@ -3,27 +3,34 @@ set(PROJECT_NAME CSC8503)
 ################################################################################
 # Source groups
 ################################################################################
-#set(Header_Files
-#    "GameTechRenderer.h"
-#    "NetworkedGame.h"
-#    "NetworkPlayer.h"
-#    "StateGameObject.h"
-#    "TutorialGame.h"
-#)
-file(GLOB Header_Files *.h)
+set(Header_Files
+    "logging/log.h"
+    "GameTechRenderer.h"
+    "GameTechRendererInterface.h"
+    "GameTechVulkanRenderer.h"
+    "NetworkedGame.h"
+    "NetworkPlayer.h"
+    "Oscillator.h"
+    "Pane.h"
+    "StateGameObject.h"
+    "TutorialGame.h"
+)
 source_group("Header Files" FILES ${Header_Files})
 
 
 
-#set(Source_Files
-#    "GameTechRenderer.cpp"
-#    "Main.cpp"
-#    "NetworkedGame.cpp"
-#    "NetworkPlayer.cpp"
-#    "StateGameObject.cpp"
-#    "TutorialGame.cpp"
-#)
-file(GLOB Source_Files *.cpp)
+set(Source_Files
+    "logging/logger.cpp"
+    "GameTechRenderer.cpp"
+    "GameTechRendererInterface.cpp"
+    "GameTechVulkanRenderer.cpp"
+    "Main.cpp"
+    "NetworkedGame.cpp"
+    "NetworkPlayer.cpp"
+    "Oscillator.cpp"
+    "StateGameObject.cpp"
+    "TutorialGame.cpp"
+)
 
 if(USE_VULKAN)
 	file(GLOB SHADER_FILES ${ASSET_ROOT}/Shaders/VK/*.*)
@@ -96,7 +103,7 @@ endif()
 ################################################################################
 # Target
 ################################################################################
-add_executable(${PROJECT_NAME}  ${ALL_FILES})
+add_executable(${PROJECT_NAME} ${ALL_FILES})
 
 use_props(${PROJECT_NAME} "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
 set(ROOT_NAMESPACE CSC8503)

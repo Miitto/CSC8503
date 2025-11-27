@@ -3,6 +3,9 @@
 #include "GameWorld.h"
 
 #include "./enet/enet.h"
+
+#include "logging/logger.h"
+
 using namespace NCL;
 using namespace CSC8503;
 
@@ -31,15 +34,15 @@ bool GameServer::Initialise() {
   netHandle = enet_host_create(&address, clientMax, 1, 0, 0);
 
   if (!netHandle) {
-    std::cerr << "Failed to create ENet server host!" << std::endl;
+    NET_ERROR("Failed to create ENet server host!");
     return false;
   }
   return true;
 }
 
-bool GameServer::SendGlobalPacket(int msgID) {
+bool GameServer::SendGlobalPacket(GamePacketType type) {
   GamePacket packet;
-  packet.type = msgID;
+  packet.type = type;
   return SendGlobalPacket(packet);
 }
 
@@ -67,12 +70,12 @@ void GameServer::UpdateServer() {
 
     switch (type) {
     case ENET_EVENT_TYPE_CONNECT:
-      std::clog << "Client " << peer << " connected!" << std::endl;
+      NET_LOG("Client {} connected.", peer);
       clientCount++;
       break;
 
     case ENET_EVENT_TYPE_DISCONNECT:
-      std::clog << "Client " << peer << " disconnected!" << std::endl;
+      NET_LOG("Client {} disconnected.", peer);
       --clientCount;
       break;
     case ENET_EVENT_TYPE_RECEIVE: {

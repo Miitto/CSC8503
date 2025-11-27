@@ -23,7 +23,8 @@ public:
 
   void StartLevel();
 
-  void ReceivePacket(int type, GamePacket *payload, int source) override;
+  void ReceivePacket(GamePacketType type, GamePacket *payload,
+                     int source) override;
 
   void OnPlayerCollision(NetworkPlayer *a, NetworkPlayer *b);
 

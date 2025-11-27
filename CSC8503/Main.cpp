@@ -28,6 +28,8 @@
 
 #include "menus/menu.h"
 
+#include "logging/log.h"
+
 #ifdef USEOPENGL
 #include "GameTechRenderer.h"
 #define CAN_COMPILE
@@ -41,9 +43,15 @@ using namespace NCL;
 using namespace CSC8503;
 
 #include <chrono>
+#include <networking/NetworkObject.h>
 #include <sstream>
 #include <thread>
 
+#pragma region Test Functions
+
+#define RUN_TESTS 1
+
+namespace {
 void TestStateMachine() {
   StateMachine *testMachine = new StateMachine();
   int data = 0;
@@ -209,6 +217,61 @@ void TestBehaviourTree() {
   }
 }
 
+#pragma region Networking Tests
+class TestPacketReceiver : public PacketReceiver {
+public:
+  TestPacketReceiver(std::string name) : name(name) {}
+
+  void ReceivePacket(GamePacketType type, GamePacket *payload,
+                     int source = -1) override {
+    if (type == BasicNetworkMessages::String_Message) {
+      auto str = StringPacket::as<StringPacket>(payload);
+
+      LOG("{} recieved: {}", name, str->view());
+    }
+  }
+
+protected:
+  std::string name;
+};
+
+void TestNetworking() {
+  NetworkBase::Initialise();
+  TestPacketReceiver serverReceiver("Server");
+  TestPacketReceiver clientReceiver("Client");
+
+  constexpr uint16_t port = NetworkBase::GetDefaultPort();
+
+  GameServer *server = new GameServer(port, 1);
+  GameClient *client = new GameClient();
+
+  server->RegisterPacketHandler(BasicNetworkMessages::String_Message,
+                                &serverReceiver);
+  client->RegisterPacketHandler(BasicNetworkMessages::String_Message,
+                                &clientReceiver);
+
+  if (!client->Connect({127, 0, 0, 1, port})) {
+    std::cerr << "Client failed to connect to server!" << std::endl;
+    return;
+  }
+
+  for (int i = 0; i < 100; ++i) {
+    server->SendGlobalPacket(
+        StringPacket("Server says hello: " + std::to_string(i)));
+    client->SendPacket(StringPacket("Client says hello: " + std::to_string(i)));
+
+    server->UpdateServer();
+    client->UpdateClient();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+
+  NetworkBase::Destroy();
+}
+#pragma endregion
+} // namespace
+#pragma endregion
+
 PushdownMachine makeMenuPushdownAutomata(TutorialGame &game) {
   PushdownState *mainMenuState = new MainMenu(game);
   PushdownMachine menuMachine(mainMenuState);
@@ -256,7 +319,11 @@ int main() {
 
   auto menuAutomata = makeMenuPushdownAutomata(*g);
 
+#if RUN_TESTS
   TestPathfinding();
+  TestBehaviourTree();
+  TestNetworking();
+#endif
 
   w->GetTimer().GetTimeDeltaSeconds(); // Clear the timer so we don't get a
                                        // larget first dt!
@@ -281,7 +348,9 @@ int main() {
     w->SetTitle("Gametech frame time:" + std::to_string(1000.0f * dt));
 
     renderer->StartFrame();
+#if RUN_TESTS
     DisplayPathfinding();
+#endif
 
     menuAutomata.Update(dt);
 
