@@ -26,6 +26,8 @@
 
 #include "physics/PhysicsSystem.h"
 
+#include "menus/menu.h"
+
 #ifdef USEOPENGL
 #include "GameTechRenderer.h"
 #define CAN_COMPILE
@@ -207,6 +209,13 @@ void TestBehaviourTree() {
   }
 }
 
+PushdownMachine makeMenuPushdownAutomata(TutorialGame &game) {
+  PushdownState *mainMenuState = new MainMenu(game);
+  PushdownMachine menuMachine(mainMenuState);
+
+  return menuMachine;
+}
+
 /*
 
 The main function should look pretty familar to you!
@@ -245,6 +254,8 @@ int main() {
 
   TutorialGame *g = new TutorialGame(*world, *renderer, *physics);
 
+  auto menuAutomata = makeMenuPushdownAutomata(*g);
+
   TestPathfinding();
 
   w->GetTimer().GetTimeDeltaSeconds(); // Clear the timer so we don't get a
@@ -272,7 +283,7 @@ int main() {
     renderer->StartFrame();
     DisplayPathfinding();
 
-    g->UpdateGame(dt);
+    menuAutomata.Update(dt);
 
     world->UpdateWorld(dt);
     physics->Update(dt);

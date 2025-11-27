@@ -4,7 +4,7 @@ namespace NCL {
 namespace CSC8503 {
 class PushdownState {
 public:
-  enum PushdownResult { Push, Pop, NoChange, Reset };
+  enum PushdownResult { Push, Pop, NoChange, Reset, Replace };
   PushdownState() {}
   virtual ~PushdownState() {}
 

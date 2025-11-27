@@ -175,23 +175,6 @@ void TutorialGame::DebugUi() {
     ImGui::InputFloat3("Gravity", &physics.GetGravity().x);
   }
 
-  constexpr const char *const scenes[] = {"Default Scene", "Collision Test"};
-  static int currentScene = 0;
-  ImGui::Text("Load Scene:");
-  if (ImGui::BeginCombo("Scenes", scenes[currentScene])) {
-    if (ImGui::Selectable(scenes[0])) {
-      currentScene = 0;
-      InitWorld();
-      selectionObject = nullptr;
-    }
-    if (ImGui::Selectable(scenes[1])) {
-      currentScene = 1;
-      InitCollisionTest();
-      selectionObject = nullptr;
-    }
-    ImGui::EndCombo();
-  }
-
   ImGui::End();
 
   if (selectionObject) {

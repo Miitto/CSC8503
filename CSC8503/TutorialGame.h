@@ -25,12 +25,12 @@ public:
 
   virtual void UpdateGame(float dt);
 
-protected:
-  void InitCamera();
-
   void Clear();
   void InitWorld();
   void InitCollisionTest();
+
+protected:
+  void InitCamera();
 
   /*
   These are some of the world/object creation functions I created when testing

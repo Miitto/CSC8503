@@ -2,7 +2,7 @@
 
 #include "Window.h"
 #include "ai/automata/PushdownState.h"
-#include "imgui/imgui.h"
+#include "gui.h"
 
 class PauseMenu : public NCL::CSC8503::PushdownState {
 public:
@@ -14,20 +14,18 @@ public:
 
     PushdownResult result = NoChange;
 
-    ImGui::Begin("Paused", nullptr,
-                 ImGuiWindowFlags_AlwaysAutoResize |
-                     ImGuiWindowFlags_NoDecoration);
-    if (ImGui::Button("Resume"))
-      return = Pop;
-    if (ImGui::Button("Quit to Main Menu")) {
-      result = Reset;
+    auto frame = NCL::gui::Frame("Paused", nullptr,
+                                 ImGuiWindowFlags_AlwaysAutoResize |
+                                     ImGuiWindowFlags_NoDecoration);
+    if (frame.button("Resume"))
+      return Pop;
+    if (frame.button("Quit to Main Menu")) {
+      return Reset;
     }
-    if (ImGui::Button("Exit to Desktop")) {
+    if (frame.button("Exit to Desktop")) {
       NCL::Window::GetWindow()->RequestExit();
-      result = Pop;
+      return Pop;
     }
-
-    ImGui::End();
 
     return result;
   }
@@ -37,8 +35,5 @@ public:
     NCL::Window::GetWindow()->LockMouseToWindow(false);
   }
 
-  void OnSleep() override {
-    NCL::Window::GetWindow()->ShowOSPointer(false);
-    NCL::Window::GetWindow()->LockMouseToWindow(true);
-  }
+  void OnSleep() override {}
 };
