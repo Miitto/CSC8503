@@ -8,20 +8,26 @@ public:
   ~BehaviourParallel() {}
 
   BehaviourState Execute(float dt) override {
+    bool success = false;
     for (auto &i : childNodes) {
       BehaviourState nodeState = i->Execute(dt);
       switch (nodeState) {
       case BehaviourState::Failure:
-        if (currentState != BehaviourState::Ongoing)
-          currentState = BehaviourState::Failure;
-        continue;
+        break;
       case BehaviourState::Success:
+        success = true;
+        break;
       case BehaviourState::Ongoing: {
         currentState = BehaviourState::Ongoing;
-        return currentState;
+        break;
       }
       }
     }
-    return BehaviourState::Failure;
+    if (currentState == BehaviourState::Ongoing) {
+      return currentState;
+    }
+
+    currentState = success ? BehaviourState::Success : BehaviourState::Failure;
+    return currentState;
   }
 };

@@ -138,3 +138,6 @@ if(MSVC)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC imgui::imgui)
+
+include(spdlog)
+LINK_SPDLOG(${PROJECT_NAME} PUBLIC)

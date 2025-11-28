@@ -5,7 +5,11 @@
 #include "Maths.h"
 #include "OBBVolume.h"
 #include "SphereVolume.h"
+#include "VectorFormat.h"
 #include "Window.h"
+#include "logging/logger.h"
+#include <array>
+#include <span>
 
 using namespace NCL;
 
@@ -421,15 +425,110 @@ bool CollisionDetection::OBBIntersection(const OBBVolume &volumeA,
 
   auto relPos = bPos - aPos;
 
-  constexpr Vector3 UP(0, 1, 0);
-  constexpr Vector3 RIGHT(1, 0, 0);
-  constexpr Vector3 FORWARD(0, 0, 1);
+  struct Axes {
+    Vector3 right;
+    Vector3 up;
+    Vector3 forward;
 
-  auto aAxes = Quaternion::RotationMatrix<Matrix3>(aRot);
-  auto bAxes = Quaternion::RotationMatrix<Matrix3>(bRot);
+    Axes(const Quaternion &q) {
+      constexpr Vector3 UP(0, 1, 0);
+      constexpr Vector3 RIGHT(1, 0, 0);
+      constexpr Vector3 FORWARD(0, 0, 1);
+      right = q * RIGHT;
+      up = q * UP;
+      forward = q * FORWARD;
+    }
+  };
 
-  // TODO: Implement full OBB-OBB collision detection using SAT
-  return false;
+  Axes aAxes(aRot);
+  Axes bAxes(bRot);
+
+  struct MinMax {
+    float min;
+    float max;
+
+    bool contains(float value) const { return value >= min && value <= max; }
+  };
+
+  auto getMinMax = [&](const Vector3 &axis,
+                       std::span<Vector3> corners) -> MinMax {
+    MinMax res{
+        .min = std::numeric_limits<float>::max(),
+        .max = std::numeric_limits<float>::min(),
+    };
+
+    for (const auto &corner : corners) {
+      float projection = Vector::Dot(corner, axis);
+      res.min = std::min(res.min, projection);
+      res.max = std::max(res.max, projection);
+    }
+
+    return res;
+  };
+
+  auto getCorners = [&](const Vector3 &pos, const Vector3 &size,
+                        const Axes &axes) -> std::array<Vector3, 8> {
+    std::array<Vector3, 8> corners;
+    int index = 0;
+    for (int x = -1; x <= 1; x += 2) {
+      for (int y = -1; y <= 1; y += 2) {
+        for (int z = -1; z <= 1; z += 2) {
+          Vector3 corner = pos + axes.right * size.x * (float)x +
+                           axes.up * size.y * (float)y +
+                           axes.forward * size.z * (float)z;
+          corners[index++] = corner;
+        }
+      }
+    }
+    return corners;
+  };
+
+  auto aCorners = getCorners(aPos, aSize, aAxes);
+  auto bCorners = getCorners(bPos, bSize, bAxes);
+
+  std::array<Vector3, 15> testAxes = {
+      aAxes.right,
+      aAxes.up,
+      aAxes.forward,
+      bAxes.right,
+      bAxes.up,
+      bAxes.forward,
+      Vector::Cross(aAxes.right, bAxes.right),
+      Vector::Cross(aAxes.right, bAxes.up),
+      Vector::Cross(aAxes.right, bAxes.forward),
+      Vector::Cross(aAxes.up, bAxes.right),
+      Vector::Cross(aAxes.up, bAxes.up),
+      Vector::Cross(aAxes.up, bAxes.forward),
+      Vector::Cross(aAxes.forward, bAxes.right),
+      Vector::Cross(aAxes.forward, bAxes.up),
+      Vector::Cross(aAxes.forward, bAxes.forward),
+  };
+
+  float leastPenetration = std::numeric_limits<float>::max();
+  NCL::Maths::Vector3 bestAxis;
+
+  for (const auto &axis : testAxes) {
+    if (Vector::Dot(axis, axis) < 0.0001f) {
+      continue;
+    }
+    Vector3 normAxis = Vector::Normalise(axis);
+    MinMax aMinMax = getMinMax(normAxis, aCorners);
+    MinMax bMinMax = getMinMax(normAxis, bCorners);
+    if (!(aMinMax.contains(bMinMax.min) || bMinMax.contains(aMinMax.min))) {
+      return false;
+    }
+
+    float pen1 = aMinMax.max - bMinMax.min;
+    if (pen1 < leastPenetration) {
+      leastPenetration = pen1;
+      bestAxis = normAxis;
+    }
+  }
+
+  collisionInfo.AddContactPoint(Vector3(), Vector3(), -bestAxis,
+                                leastPenetration);
+
+  return true;
 }
 
 bool CollisionDetection::OBBSphereIntersection(const OBBVolume &volumeA,
