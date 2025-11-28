@@ -96,6 +96,18 @@ struct GamePacket {
   static T *as(GamePacket *base) {
     return reinterpret_cast<T *>(base);
   }
+
+  template <typename T>
+    requires std::is_base_of<GamePacket, T>::value
+  static T &as(GamePacket &base) {
+    return (reinterpret_cast<T &>(base));
+  }
+
+  template <typename T> static T as(const GamePacket &base) {
+    static_assert(std::is_base_of<GamePacket, T>::value,
+                  "GamePacket::as<T> can only be used with types derived from "
+                  "GamePacket");
+  }
 };
 
 class PacketReceiver {
