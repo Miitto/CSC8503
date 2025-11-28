@@ -15,8 +15,8 @@
 #define TRACE(...) (void)0
 #endif
 #if LOG_LEVEL <= SPDLOG_LEVEL_DEBUG
-#define NCL                                                                    \
-  ::logging::mainLogger->log(                                                  \
+#define DEBUG(...)                                                             \
+  NCL::logging::mainLogger->log(                                               \
       spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION},                 \
       spdlog::level::debug, __VA_ARGS__)
 

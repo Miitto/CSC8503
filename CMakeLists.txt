@@ -57,6 +57,9 @@ include(CMake/GlobalSettingsInclude.cmake OPTIONAL)
 ################################################################################
 option(USE_VULKAN BOOL OFF)
 option(USE_OPENGL BOOL ON)
+set(LOG_LEVEL "DEBUG" CACHE STRING "Log level (TRACE, DEBUG, INFO, WARN, ERROR, CRITICAL)")
+
+add_compile_definitions(SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${LOG_LEVEL})
 
 ################################################################################
 # Use solution folders feature

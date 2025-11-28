@@ -41,37 +41,37 @@ struct GamePacketType {
 template <>
 struct fmt::formatter<GamePacketType> : fmt::formatter<std::string> {
   template <typename FormatContext>
-  auto format(const GamePacketType &msgType, FormatContext &ctx) {
+  auto format(const GamePacketType &msgType, FormatContext &ctx) const {
     std::string typeName;
     switch (msgType.type) {
-    case BasicNetworkMessages::None:
+    case static_cast<uint16_t>(BasicNetworkMessages::None):
       typeName = "None";
       break;
-    case BasicNetworkMessages::Hello:
+    case static_cast<uint16_t>(BasicNetworkMessages::Hello):
       typeName = "Hello";
       break;
-    case BasicNetworkMessages::Message:
+    case static_cast<uint16_t>(BasicNetworkMessages::Message):
       typeName = "Message";
       break;
-    case BasicNetworkMessages::String_Message:
+    case static_cast<uint16_t>(BasicNetworkMessages::String_Message):
       typeName = "String_Message";
       break;
-    case BasicNetworkMessages::Delta_State:
+    case static_cast<uint16_t>(BasicNetworkMessages::Delta_State):
       typeName = "Delta_State";
       break;
-    case BasicNetworkMessages::Full_State:
+    case static_cast<uint16_t>(BasicNetworkMessages::Full_State):
       typeName = "Full_State";
       break;
-    case BasicNetworkMessages::Received_State:
+    case static_cast<uint16_t>(BasicNetworkMessages::Received_State):
       typeName = "Received_State";
       break;
-    case BasicNetworkMessages::Player_Connected:
+    case static_cast<uint16_t>(BasicNetworkMessages::Player_Connected):
       typeName = "Player_Connected";
       break;
-    case BasicNetworkMessages::Player_Disconnected:
+    case static_cast<uint16_t>(BasicNetworkMessages::Player_Disconnected):
       typeName = "Player_Disconnected";
       break;
-    case BasicNetworkMessages::Shutdown:
+    case static_cast<uint16_t>(BasicNetworkMessages::Shutdown):
       typeName = "Shutdown";
       break;
     default:

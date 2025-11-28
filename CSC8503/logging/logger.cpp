@@ -5,6 +5,7 @@
 namespace {
 auto createLogger() {
   auto logger = spdlog::stdout_color_mt("CSC8503");
+  logger->set_level(spdlog::level::trace);
   logger->set_pattern("[%H:%M:%S.%e] [%n] [%^%L%$] [%s:%#] %v");
   return logger;
 }
