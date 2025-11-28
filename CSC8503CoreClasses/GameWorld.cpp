@@ -82,12 +82,15 @@ void GameWorld::UpdateWorld(float dt) {
   }
 }
 
-bool GameWorld::Raycast(Ray &r, RayCollision &closestCollision,
-                        bool closestObject,
+bool GameWorld::Raycast(Ray &r, RayCollision &collision,
+                        std::optional<float> maxDist,
                         const GameObject *const ignoreThis) const {
-  // The simplest raycast just goes through each object and sees if there's a
-  // collision
-  RayCollision collision;
+  auto distanceCheck = [&](const RayCollision &c) {
+    if (maxDist.has_value()) {
+      return c.rayDistance <= maxDist.value();
+    }
+    return true;
+  };
 
   for (auto &i : gameObjects) {
     if (!i->GetBoundingVolume()) { // objects might not be collideable etc...
@@ -96,38 +99,61 @@ bool GameWorld::Raycast(Ray &r, RayCollision &closestCollision,
     if (i == ignoreThis) {
       continue;
     }
+
     RayCollision thisCollision;
     if (CollisionDetection::RayIntersection(r, *i, thisCollision)) {
-
-      if (!closestObject) {
-        closestCollision = collision;
-        closestCollision.node = i;
-        return true;
-      } else {
-        if (thisCollision.rayDistance < collision.rayDistance) {
-          thisCollision.node = i;
-          collision = thisCollision;
-        }
+      if (thisCollision.rayDistance < collision.rayDistance &&
+          distanceCheck(thisCollision)) {
+        thisCollision.node = i;
+        collision = thisCollision;
       }
     }
   }
   if (collision.node) {
-    closestCollision = collision;
-    closestCollision.node = collision.node;
     return true;
   }
   return false;
 }
 
-GameWorld::LookingAt GameWorld::ObjectLookAt(GameObject *object) const {
+bool GameWorld::RaycastHitCheck(Ray &r, std::optional<float> maxDist,
+                                const GameObject *const ignoreThis) const {
+  RayCollision collision;
+
+  auto distanceCheck = [&](const RayCollision &c) {
+    if (maxDist.has_value()) {
+      return c.rayDistance <= maxDist.value();
+    }
+    return true;
+  };
+
+  for (auto &i : gameObjects) {
+    if (!i->GetBoundingVolume()) { // objects might not be collideable etc...
+      continue;
+    }
+    if (i == ignoreThis) {
+      continue;
+    }
+
+    RayCollision thisCollision;
+    if (CollisionDetection::RayIntersection(r, *i, thisCollision)) {
+      if (distanceCheck(thisCollision)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+GameWorld::LookingAt
+GameWorld::ObjectLookAt(GameObject *object,
+                        std::optional<float> maxDist) const {
 
   Vector3 rayPos = object->GetTransform().GetPosition();
   Vector3 rayDir = object->GetTransform().GetOrientation() * Vector3(0, 0, -1);
 
   Ray r = Ray(rayPos, rayDir);
   RayCollision collision;
-
-  if (Raycast(r, collision, true, object)) {
+  if (Raycast(r, collision, maxDist, object)) {
     LookingAt lookingAt;
     lookingAt.object = (GameObject *)collision.node;
     lookingAt.collision = collision;

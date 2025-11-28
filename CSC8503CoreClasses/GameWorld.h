@@ -36,9 +36,12 @@ public:
 
   void ShuffleObjects(bool state) { shuffleObjects = state; }
 
-  bool Raycast(Ray &r, RayCollision &closestCollision,
-               bool closestObject = false,
+  bool Raycast(Ray &r, RayCollision &collision,
+               std::optional<float> maxDist = std::nullopt,
                const GameObject *const ignore = nullptr) const;
+
+  bool RaycastHitCheck(Ray &r, std::optional<float> maxDist = std::nullopt,
+                       const GameObject *const ignore = nullptr) const;
 
   struct LookingAt {
     GameObject *object;
@@ -47,7 +50,8 @@ public:
     operator bool() const { return object != nullptr; }
   };
 
-  LookingAt ObjectLookAt(GameObject *object) const;
+  LookingAt ObjectLookAt(GameObject *object,
+                         std::optional<float> maxDist = std::nullopt) const;
 
   virtual void UpdateWorld(float dt);
 

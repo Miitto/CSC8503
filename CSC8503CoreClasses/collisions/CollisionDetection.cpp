@@ -423,8 +423,6 @@ bool CollisionDetection::OBBIntersection(const OBBVolume &volumeA,
   auto bSize = volumeB.GetHalfDimensions();
   auto bRot = worldTransformB.GetOrientation();
 
-  auto relPos = bPos - aPos;
-
   struct Axes {
     Vector3 right;
     Vector3 up;
