@@ -17,14 +17,11 @@ set(Header_Files
 )
 source_group("Header Files" FILES ${Header_Files})
 
-
-
 set(Source_Files
     "logging/logger.cpp"
-    "GameTechRenderer.cpp"
-    "GameTechRendererInterface.cpp"
-    "GameTechVulkanRenderer.cpp"
-    "Main.cpp"
+  "GameTechRenderer.cpp"
+  "GameTechRendererInterface.cpp"
+  "GameTechVulkanRenderer.cpp"
     "NetworkedGame.cpp"
     "NetworkPlayer.cpp"
     "Oscillator.cpp"
@@ -35,7 +32,7 @@ set(Source_Files
 if(USE_VULKAN)
 	file(GLOB SHADER_FILES ${ASSET_ROOT}/Shaders/VK/*.*)
 
-    list(REMOVE_ITEM Header_Files ${CMAKE_CURRENT_SOURCE_DIR}/GameTechRenderer.h)
+  list(REMOVE_ITEM Header_Files ${CMAKE_CURRENT_SOURCE_DIR}/GameTechRenderer.h)
 	list(REMOVE_ITEM Source_Files ${CMAKE_CURRENT_SOURCE_DIR}/GameTechRenderer.cpp)
 
 else()
@@ -103,99 +100,21 @@ endif()
 ################################################################################
 # Target
 ################################################################################
-add_executable(${PROJECT_NAME} ${ALL_FILES})
 
-use_props(${PROJECT_NAME} "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
+add_library(${PROJECT_NAME} STATIC
+    ${ALL_FILES}
+)
+add_library(CSC8503::CSC8503 ALIAS ${PROJECT_NAME})
+
+target_sources(${PROJECT_NAME}
+    PUBLIC
+        FILE_SET HEADERS
+)
+
 set(ROOT_NAMESPACE CSC8503)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    VS_GLOBAL_KEYWORD "Win32Proj"
-)
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    INTERPROCEDURAL_OPTIMIZATION_RELEASE "TRUE"
-)
-
-################################################################################
-# Compile definitions
-################################################################################
-if(MSVC)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        "UNICODE;"
-        "_UNICODE" 
-        "WIN32_LEAN_AND_MEAN"
-        "_WINSOCKAPI_"   
-        "_WINSOCK2API_"
-        "_WINSOCK_DEPRECATED_NO_WARNINGS"
-    )
-endif()
-
-target_precompile_headers(${PROJECT_NAME} PRIVATE
-    <vector>
-    <map>
-    <stack>
-    <list>   
-	<set>   
-	<string>
-    <thread>
-    <atomic>
-    <functional>
-    <iostream>
-	<chrono>
-	<sstream>
-	
-	"../NCLCoreClasses/Vector.h"
-    "../NCLCoreClasses/Quaternion.h"
-    "../NCLCoreClasses/Plane.h"
-    "../NCLCoreClasses/Matrix.h"
-    "../NCLCoreClasses/GameTimer.h"
-)
- 
-if(USE_VULKAN)
-target_precompile_headers(${PROJECT_NAME} PRIVATE
-    <vulkan/vulkan.hpp>
-    <SmartTypes.h>
-    <VulkanRenderer.h>
-    #<VulkanShader.h>
-    #<VulkanShaderBuilder.h>
-    <VulkanTexture.h>
-    <VulkanMesh.h>
-    <VulkanPipelineBuilder.h>
-    <VulkanDynamicRenderBuilder.h>
-
-    <VulkanTextureBuilder.h>
-
-    <VulkanDescriptorSetLayoutBuilder.h>
-    <VulkanRenderPassBuilder.h>
-    #<VulkanCompute.h>
-    <VulkanComputePipelineBuilder.h>
-	<VulkanBufferBuilder.h>
-)
-endif()
-
-################################################################################
-# Compile and link options
-################################################################################
-if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE
-        $<$<CONFIG:Release>:
-            /Oi;
-            /Gy
-        >
-        /permissive-;
-        /std:c++latest;
-        /sdl;
-        /W3;
-        ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT};
-        ${DEFAULT_CXX_EXCEPTION_HANDLING};
-        /Y-
-    )
-    target_link_options(${PROJECT_NAME} PRIVATE
-        $<$<CONFIG:Release>:
-            /OPT:REF;
-            /OPT:ICF
-        >
-    )
-endif()
+include(setupProj)
+setupProj(${PROJECT_NAME})
 
 ################################################################################
 # Dependencies
@@ -204,8 +123,6 @@ if(MSVC)
     target_link_libraries(${PROJECT_NAME} LINK_PUBLIC  "Winmm.lib")
 endif()
 
-include_directories("../NCLCoreClasses/")
-include_directories("../CSC8503CoreClasses/")
 
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC NCLCoreClasses)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC CSC8503CoreClasses)
@@ -213,12 +130,10 @@ target_link_libraries(${PROJECT_NAME} LINK_PUBLIC CSC8503CoreClasses)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC GLTFLoader)
 
 if(USE_OPENGL)
-include_directories("../OpenGLRendering/")
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC OpenGLRendering)
 endif()
 
 if(USE_VULKAN)
-    include_directories("../VulkanRendering/")
     target_link_libraries(${PROJECT_NAME} LINK_PUBLIC VulkanRendering)
 
     add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS)

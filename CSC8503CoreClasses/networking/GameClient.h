@@ -16,13 +16,14 @@ public:
 
   bool Connect(IP ip);
 
+  void SendPacket(GamePacketType type);
   void SendPacket(GamePacket &payload);
   void SendPacket(GamePacket &&payload);
 
   void UpdateClient();
 
 protected:
-  _ENetPeer *netPeer;
+  _ENetPeer *netPeer = nullptr;
 };
 } // namespace CSC8503
 } // namespace NCL

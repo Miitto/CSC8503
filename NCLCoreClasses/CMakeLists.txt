@@ -104,6 +104,11 @@ set(ALL_FILES
 ################################################################################
 add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
 
+target_sources(${PROJECT_NAME}
+  PUBLIC
+  FILE_SET HEADERS
+)
+
 set_target_properties(${PROJECT_NAME} PROPERTIES
     INTERPROCEDURAL_OPTIMIZATION_RELEASE "TRUE"
 )

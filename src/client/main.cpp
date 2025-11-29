@@ -10,10 +10,8 @@
 #include "networking/GameServer.h"
 
 #include "ai/pathfinding/NavigationGrid.h"
-#include "ai/pathfinding/NavigationMesh.h"
 
-#include "NetworkedGame.h"
-#include "TutorialGame.h"
+#include "ClientGame.h"
 
 #include "ai/automata/PushdownMachine.h"
 
@@ -44,12 +42,11 @@ using namespace CSC8503;
 
 #include <chrono>
 #include <networking/NetworkObject.h>
-#include <sstream>
 #include <thread>
 
 #pragma region Test Functions
 
-#define RUN_TESTS 1
+#define RUN_TESTS 0
 
 namespace {
 void TestStateMachine() {
@@ -272,7 +269,7 @@ void TestNetworking() {
 } // namespace
 #pragma endregion
 
-PushdownMachine makeMenuPushdownAutomata(TutorialGame &game) {
+PushdownMachine makeMenuPushdownAutomata(ClientGame &game) {
   PushdownState *mainMenuState = new MainMenu(game);
   PushdownMachine menuMachine(mainMenuState);
 
@@ -315,7 +312,7 @@ int main() {
   GameTechRenderer *renderer = new GameTechRenderer(*world);
 #endif
 
-  TutorialGame *g = new TutorialGame(*world, *renderer, *physics);
+  ClientGame *g = new ClientGame(*world, *renderer, *physics);
 
   auto menuAutomata = makeMenuPushdownAutomata(*g);
 
@@ -353,6 +350,7 @@ int main() {
 #endif
 
     menuAutomata.Update(dt);
+    g->UpdateGame(dt);
 
     world->UpdateWorld(dt);
     physics->Update(dt);

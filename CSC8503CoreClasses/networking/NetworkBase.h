@@ -7,16 +7,32 @@ struct _ENetEvent;
 #include <spdlog/fmt/bundled/format.h>
 
 enum class BasicNetworkMessages : uint16_t {
-  None,
+  /// @brief Packet sent client->server when first connecting
   Hello,
+  /// @brief Quick 0-size packet to check latency / connection
+  Ping,
+  /// @brief Response to a ping
+  Ping_Response,
+  /// @brief Generic message with a short ID
   Message,
+  /// @brief Generic message with a string
   String_Message,
-  Delta_State,    // 1 byte per channel since the last state
-  Full_State,     // Full transform etc
+  /// @brief Delta state update sent server->client
+  Delta_State, // 1 byte per channel since the last state
+  /// @brief Full state update sent server->client
+  Full_State, // Full transform etc
+  /// @brief Player state update sent client->server
+  PlayerState,
+  /// @brief Server acknowledgment of a received player state
   Received_State, // received from a client, informs that its received packet n
+  /// @brief Sent server->clients when a new player connects
   Player_Connected,
+  /// @brief Sent server->clients when a player disconnects
   Player_Disconnected,
+  /// @brief Sent client->server when a client is disconnecting, or
+  /// server->clients when server shutting down
   Shutdown,
+  /// @brief Max built-in message ID for custom messages to start from
   BUILTIN_MAX
 };
 
@@ -24,7 +40,7 @@ struct GamePacketType {
   uint16_t type;
 
   GamePacketType(
-      uint16_t type = static_cast<uint16_t>(BasicNetworkMessages::None))
+      uint16_t type = static_cast<uint16_t>(BasicNetworkMessages::PlayerState))
       : type(type) {}
   GamePacketType(BasicNetworkMessages type)
       : type(static_cast<uint16_t>(type)) {}
@@ -44,11 +60,17 @@ struct fmt::formatter<GamePacketType> : fmt::formatter<std::string> {
   auto format(const GamePacketType &msgType, FormatContext &ctx) const {
     std::string typeName;
     switch (msgType.type) {
-    case static_cast<uint16_t>(BasicNetworkMessages::None):
-      typeName = "None";
+    case static_cast<uint16_t>(BasicNetworkMessages::PlayerState):
+      typeName = "PlayerState";
       break;
     case static_cast<uint16_t>(BasicNetworkMessages::Hello):
       typeName = "Hello";
+      break;
+    case static_cast<uint16_t>(BasicNetworkMessages::Ping):
+      typeName = "Ping";
+      break;
+    case static_cast<uint16_t>(BasicNetworkMessages::Ping_Response):
+      typeName = "Ping_Response";
       break;
     case static_cast<uint16_t>(BasicNetworkMessages::Message):
       typeName = "Message";
@@ -84,10 +106,11 @@ struct fmt::formatter<GamePacketType> : fmt::formatter<std::string> {
 
 struct GamePacket {
   uint16_t size = 0;
-  GamePacketType type = GamePacketType(BasicNetworkMessages::None);
+  GamePacketType type = GamePacketType(BasicNetworkMessages::PlayerState);
 
-  GamePacket(GamePacketType type = GamePacketType(BasicNetworkMessages::None),
-             uint16_t size = 0)
+  GamePacket(
+      GamePacketType type = GamePacketType(BasicNetworkMessages::PlayerState),
+      uint16_t size = 0)
       : type(type), size(size) {}
   int GetTotalSize() { return sizeof(GamePacket) + size; }
 
@@ -153,7 +176,7 @@ protected:
     return IteratorRange{.first = range.first, .last = range.second};
   }
 
-  _ENetHost *netHandle;
+  _ENetHost *netHandle = nullptr;
 
   std::multimap<GamePacketType, PacketReceiver *> packetHandlers;
 };

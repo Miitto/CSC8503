@@ -40,6 +40,41 @@ bool GameServer::Initialise() {
   return true;
 }
 
+ENetPeer *GameServer::GetPeer(int id) {
+  for (size_t i = 0; i < netHandle->peerCount; i++) {
+    ENetPeer *p = &netHandle->peers[i];
+    if (p->incomingPeerID == static_cast<enet_uint16>(id)) {
+      return p;
+    }
+  }
+  return nullptr;
+}
+
+bool GameServer::SendPacketToClient(int clientID, GamePacketType type) {
+  GamePacket packet;
+  packet.type = type;
+  return SendPacketToClient(clientID, packet);
+}
+
+bool GameServer::SendPacketToClient(int clientID, GamePacket &packet) {
+  ENetPacket *enetPacket =
+      enet_packet_create(&packet, packet.GetTotalSize(), 0);
+
+  auto peer = GetPeer(clientID);
+
+  if (!peer) {
+    NET_ERROR("No such client with ID {}", clientID);
+    enet_packet_destroy(enetPacket);
+    return false;
+  }
+  enet_peer_send(peer, 0, enetPacket);
+  return true;
+}
+
+bool GameServer::SendPacketToClient(int clientID, GamePacket &&packet) {
+  return SendPacketToClient(clientID, static_cast<GamePacket &>(packet));
+}
+
 bool GameServer::SendGlobalPacket(GamePacketType type) {
   GamePacket packet;
   packet.type = type;

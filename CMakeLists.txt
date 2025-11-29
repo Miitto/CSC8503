@@ -92,6 +92,7 @@ endif()
 ################################################################################
 # Sub-projects
 ################################################################################
+add_subdirectory(src)
 add_subdirectory(NCLCoreClasses)
 add_subdirectory(CSC8503CoreClasses)
 add_subdirectory(CSC8503)

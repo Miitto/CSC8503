@@ -79,7 +79,10 @@ TutorialGame::TutorialGame(GameWorld &inWorld,
 TutorialGame::~TutorialGame() {}
 
 void TutorialGame::UpdateGame(float dt) {
-  if (!inSelectionMode) {
+  if (!active)
+    return;
+
+  if (updateCamera && !inSelectionMode) {
     world.GetMainCamera().UpdateCamera(dt);
   }
   if (pane) {
@@ -195,8 +198,8 @@ void TutorialGame::DebugUi() {
     ImGui::Text("Inv Mass: %.3f",
                 selectionObject->GetPhysicsObject()->GetInverseMass());
 
-    constexpr const char *const colliderNames[] = {"None", "Sphere ", "AABB",
-                                                   "OBB", "Capsule"};
+    constexpr const char *const colliderNames[] = {"PlayerState", "Sphere ",
+                                                   "AABB", "OBB", "Capsule"};
     int idx = 0;
     switch (selectionObject->GetBoundingVolume()->type) {
     case VolumeType::Sphere:

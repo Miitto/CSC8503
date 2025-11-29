@@ -29,6 +29,9 @@ public:
   void InitWorld();
   void InitCollisionTest();
 
+  void SetActive(bool state) { active = state; }
+  void SetCameraActive(bool state) { updateCamera = state; }
+
 protected:
   void InitCamera();
 
@@ -72,6 +75,9 @@ protected:
 
   Pane *AddPaneToWorld(const NCL::Maths::Vector3 &position,
                        const NCL::Maths::Vector2 &dimensions, float invMass);
+
+  bool active = true;
+  bool updateCamera = true;
 
   GameWorld &world;
   GameTechRendererInterface &renderer;

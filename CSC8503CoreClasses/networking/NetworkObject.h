@@ -33,7 +33,16 @@ struct ClientPacket : public GamePacket {
   char buttonstates[8] = {};
 
   ClientPacket()
-      : GamePacket(BasicNetworkMessages::None, sizeof(ClientPacket)) {}
+      : GamePacket(BasicNetworkMessages::PlayerState, sizeof(ClientPacket)) {}
+};
+
+struct AckPacket : public GamePacket {
+  int receivedID;
+  AckPacket() = delete;
+  AckPacket(int received)
+      : GamePacket(BasicNetworkMessages::Received_State,
+                   sizeof(AckPacket) - sizeof(GamePacket)),
+        receivedID(received) {}
 };
 
 struct StringPacket : public GamePacket {

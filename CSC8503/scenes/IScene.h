@@ -14,21 +14,23 @@ public:
   PushdownResult OnUpdate(float dt,
                           NCL::CSC8503::PushdownState **newState) override {
     if (NCL::Window::GetKeyboard()->KeyPressed(NCL::KeyCodes::ESCAPE)) {
-      *newState = new PauseMenu();
+      *newState = new PauseMenu(game);
       return Push;
     }
-
-    game.UpdateGame(dt);
 
     return NoChange;
   }
 
+  void OnInit() override { OnAwake(); }
+
   void OnAwake() override {
     NCL::Window::GetWindow()->ShowOSPointer(false);
     NCL::Window::GetWindow()->LockMouseToWindow(true);
+    game.SetActive(true);
+    game.SetCameraActive(true);
   }
 
-  void OnDestroy() override { game.Clear(); }
+  void OnDestroy() override {}
 
 protected:
   TutorialGame &game;

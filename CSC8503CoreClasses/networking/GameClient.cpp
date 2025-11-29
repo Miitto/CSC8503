@@ -6,15 +6,17 @@
 using namespace NCL;
 using namespace CSC8503;
 
-GameClient::GameClient() : netPeer(nullptr) {
+GameClient::GameClient() {
   NET_DEBUG("Creating GameClient");
   netHandle = enet_host_create(nullptr, 1, 1, 0, 0);
   NET_TRACE("Created GameClient at {}", (void *)netHandle);
 }
 
 GameClient::~GameClient() {
+  if (netHandle == nullptr)
+    return;
+
   NET_TRACE("Destroying GameClient at {}", (void *)netHandle);
-  enet_host_destroy(netHandle);
   NET_DEBUG("Destroyed GameClient");
 }
 
@@ -27,6 +29,13 @@ bool GameClient::Connect(IP ip) {
 
   netPeer = enet_host_connect(netHandle, &addr, 2, 0);
   NET_TRACE("GameClient connect peer: {}", (void *)netPeer);
+
+  if (netPeer == nullptr) {
+    NET_ERROR("GameClient failed to create ENet peer for {}", ip);
+    return false;
+  } else {
+    NET_LOG("GameClient connected to {}", ip);
+  }
 
   return netPeer != nullptr;
 }
@@ -55,6 +64,12 @@ void GameClient::UpdateClient() {
     }
     enet_packet_destroy(event.packet);
   }
+}
+
+void GameClient::SendPacket(GamePacketType type) {
+  GamePacket packet;
+  packet.type = type;
+  SendPacket(packet);
 }
 
 void GameClient::SendPacket(GamePacket &payload) {

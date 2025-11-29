@@ -20,7 +20,7 @@ public:
       auto frame = NCL::gui::Frame("Pane Controls");
 
       constexpr const char *cornerNames[] = {
-          "None", "Front Left", "Front Right", "Back Left", "Back Right",
+          "PlayerState", "Front Left", "Front Right", "Back Left", "Back Right",
       };
 
       if (ImGui::BeginCombo("Current Corner",

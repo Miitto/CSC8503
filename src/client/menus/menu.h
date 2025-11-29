@@ -1,22 +1,21 @@
 #pragma once
 
-#include "GameWorld.h"
-#include "TutorialGame.h"
+#include "ClientGame.h"
 #include "Window.h"
 #include "ai/automata/PushdownState.h"
 #include "gui.h"
+#include "menus/multiplayer.h"
 #include "menus/pause.h"
-#include "scenes/collisionTest.h"
-#include "scenes/default.h"
+#include "menus/solo.h"
 
 class MainMenu : public NCL::CSC8503::PushdownState {
 public:
-  MainMenu(TutorialGame &game) : game(game) {}
+  MainMenu(ClientGame &game) : game(game) {}
 
   PushdownResult OnUpdate(float dt,
                           NCL::CSC8503::PushdownState **newState) override {
     if (NCL::Window::GetKeyboard()->KeyPressed(NCL::KeyCodes::ESCAPE)) {
-      (*newState) = new PauseMenu();
+      (*newState) = new PauseMenu(game);
       return Push;
     }
 
@@ -30,12 +29,12 @@ public:
     auto frame = NCL::gui::Frame("Main Menu", nullptr,
                                  ImGuiWindowFlags_AlwaysAutoResize |
                                      ImGuiWindowFlags_NoDecoration);
-    if (frame.button("Default Scene")) {
-      *newState = new DefaultScene(game);
+    if (frame.button("Singleplayer")) {
+      *newState = new SoloMenu(game);
       return Push;
     }
-    if (frame.button("Collision Test")) {
-      *newState = new CollisionTestScene(game);
+    if (frame.button("Multiplayer")) {
+      *newState = new MultiplayerMenu(game);
       return Push;
     }
     if (frame.button("Exit to Desktop")) {
@@ -47,8 +46,10 @@ public:
   void OnAwake() override {
     NCL::Window::GetWindow()->ShowOSPointer(true);
     NCL::Window::GetWindow()->LockMouseToWindow(false);
+
+    game.SetActive(false);
   }
 
 protected:
-  TutorialGame &game;
+  ClientGame &game;
 };

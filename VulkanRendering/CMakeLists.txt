@@ -69,6 +69,12 @@ set(ALL_FILES
 ################################################################################
 add_library(${PROJECT_NAME} STATIC ${ALL_FILES})
 
+target_sources(${PROJECT_NAME}
+  PUBLIC
+  FILE_SET HEADERS
+)
+
+
 target_precompile_headers(${PROJECT_NAME} PRIVATE
     "$<$<COMPILE_LANGUAGE:CXX>:<vulkan/vulkan.hpp$<ANGLE-R>>"
 	"$<$<COMPILE_LANGUAGE:CXX>:<vma/vk_mem_alloc.h$<ANGLE-R>>"
