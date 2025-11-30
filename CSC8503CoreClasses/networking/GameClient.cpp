@@ -34,7 +34,7 @@ bool GameClient::Connect(IP ip) {
     NET_ERROR("GameClient failed to create ENet peer for {}", ip);
     return false;
   } else {
-    NET_LOG("GameClient connected to {}", ip);
+    NET_INFO("GameClient connected to {}", ip);
   }
 
   return netPeer != nullptr;
@@ -49,7 +49,7 @@ void GameClient::UpdateClient() {
   while (enet_host_service(netHandle, &event, 0) > 0) {
     switch (event.type) {
     case ENET_EVENT_TYPE_CONNECT:
-      NET_LOG("Connected to server!");
+      NET_INFO("Connected to server!");
       break;
     case ENET_EVENT_TYPE_RECEIVE: {
       GamePacket *packet = reinterpret_cast<GamePacket *>(event.packet->data);
@@ -57,7 +57,7 @@ void GameClient::UpdateClient() {
       break;
     }
     case ENET_EVENT_TYPE_DISCONNECT:
-      NET_LOG("Disconnected from server!");
+      NET_INFO("Disconnected from server!");
       break;
     default:
       break;

@@ -23,6 +23,7 @@ void GameServer::Shutdown() {
   SendGlobalPacket(BasicNetworkMessages::Shutdown);
   enet_host_destroy(netHandle);
   netHandle = nullptr;
+  NET_INFO("Server shutdown on port {}", port);
 }
 
 bool GameServer::Initialise() {
@@ -37,6 +38,9 @@ bool GameServer::Initialise() {
     NET_ERROR("Failed to create ENet server host!");
     return false;
   }
+
+  NET_INFO("Server initialized on port {} for up to {} clients.", port,
+           clientMax);
   return true;
 }
 
@@ -105,15 +109,17 @@ void GameServer::UpdateServer() {
 
     switch (type) {
     case ENET_EVENT_TYPE_CONNECT:
-      NET_LOG("Client {} connected.", peer);
+      NET_INFO("Client {} connected.", peer);
       clientCount++;
       break;
 
     case ENET_EVENT_TYPE_DISCONNECT:
-      NET_LOG("Client {} disconnected.", peer);
+      NET_INFO("Client {} disconnected.", peer);
       --clientCount;
       break;
     case ENET_EVENT_TYPE_RECEIVE: {
+      NET_TRACE("Server received packet of type {} from client {}",
+                reinterpret_cast<GamePacket *>(event.packet->data)->type, peer);
       GamePacket *packet = reinterpret_cast<GamePacket *>(event.packet->data);
       ProcessPacket(packet, peer);
     }

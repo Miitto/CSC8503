@@ -9,7 +9,6 @@ set(Header_Files
     "GameTechRendererInterface.h"
     "GameTechVulkanRenderer.h"
     "NetworkedGame.h"
-    "NetworkPlayer.h"
     "Oscillator.h"
     "Pane.h"
     "StateGameObject.h"
@@ -19,11 +18,10 @@ source_group("Header Files" FILES ${Header_Files})
 
 set(Source_Files
     "logging/logger.cpp"
-  "GameTechRenderer.cpp"
-  "GameTechRendererInterface.cpp"
-  "GameTechVulkanRenderer.cpp"
+    "GameTechRenderer.cpp"
+    "GameTechRendererInterface.cpp"
+    "GameTechVulkanRenderer.cpp"
     "NetworkedGame.cpp"
-    "NetworkPlayer.cpp"
     "Oscillator.cpp"
     "StateGameObject.cpp"
     "TutorialGame.cpp"

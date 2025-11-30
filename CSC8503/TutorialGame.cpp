@@ -169,6 +169,8 @@ void TutorialGame::UpdateGame(float dt) {
 }
 
 void TutorialGame::DebugUi() {
+  if (!showUi)
+    return;
   ImGui::Begin("Tutorial Game Debug");
   if (ImGui::Checkbox("Use (G)ravity", &useGravity))
     physics.UseGravity(useGravity);

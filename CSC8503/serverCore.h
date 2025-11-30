@@ -2,6 +2,7 @@
 
 #include "GameObject.h"
 #include "GameWorld.h"
+#include "logging/logger.h"
 #include "networking/GameServer.h"
 #include "networking/NetworkBase.h"
 #include "networking/NetworkObject.h"
@@ -10,6 +11,76 @@
 #include <vector>
 
 namespace NCL::CSC8503 {
+
+using ClientId = int;
+
+struct NetworkClient {
+  ENetPeer *peer;
+  ClientId clientID; // Duplicate of peer ID for convenience
+  int lastReceivedStateID;
+};
+
+class ClientDir {
+public:
+  bool contains(ClientId clientID) const {
+    return clients.find(clientID) != clients.end();
+  }
+  NetworkClient &get(ClientId clientID) { return clients.at(clientID); }
+  const NetworkClient &get(ClientId clientID) const {
+    return clients.at(clientID);
+  }
+
+  std::map<ClientId, NetworkClient>::iterator find(ClientId clientID) {
+    return clients.find(clientID);
+  }
+  std::map<ClientId, NetworkClient>::const_iterator
+  find(ClientId clientID) const {
+    return clients.find(clientID);
+  }
+
+  std::map<ClientId, NetworkClient>::const_iterator begin() const {
+    return clients.cbegin();
+  }
+  std::map<ClientId, NetworkClient>::const_iterator end() const {
+    return clients.cend();
+  }
+
+  ClientDir &insert(NetworkClient client) {
+    clients.emplace(client.clientID, client);
+    return *this;
+  }
+
+  ClientDir &erase(ClientId clientID) {
+    clients.erase(clientID);
+    return *this;
+  }
+
+  ClientDir &updateLastReceivedStateID(ClientId clientID, int stateID) {
+    auto client = clients.find(clientID);
+    if (client == clients.end()) {
+      NET_ERROR("ClientDir::updateLastReceivedStateID: Client ID {} not found.",
+                clientID);
+      return *this;
+    }
+    auto lastStateID = client->second.lastReceivedStateID;
+    if (stateID > lastStateID) {
+      client->second.lastReceivedStateID = stateID;
+    }
+    return *this;
+  }
+
+  int getMinimumLastReceivedStateID() const {
+    int minID = INT_MAX;
+    for (const auto &i : clients) {
+      minID = std::min(minID, i.second.lastReceivedStateID);
+    }
+    return minID;
+  }
+
+protected:
+  std::map<ClientId, NetworkClient> clients = {};
+};
+
 class ServerCore : public PacketReceiver {
 public:
   ServerCore(uint16_t port, int maxClients)
@@ -22,7 +93,10 @@ public:
 
   ~ServerCore() { net.SendGlobalPacket(BasicNetworkMessages::Shutdown); }
 
+  void UpdateServer() { net.UpdateServer(); }
+
   void Update(float dt, GameWorld &world) {
+    NET_TRACE("Server Update at {}hz", 1 / dt);
     packetsToSnapshot--;
     if (packetsToSnapshot < 0) {
       --snapshotsToStateUpdate;
@@ -43,19 +117,21 @@ public:
     switch (type.type) {
     case static_cast<uint16_t>(BasicNetworkMessages::Received_State): {
       auto packet = GamePacket::as<AckPacket>(payload);
-      auto curr = stateIDs[source];
-      if (packet->receivedID > curr)
-        stateIDs[source] = packet->receivedID;
+      clients.updateLastReceivedStateID(source, packet->receivedID);
       break;
     }
     case static_cast<uint16_t>(BasicNetworkMessages::Hello): {
-      NET_LOG("Client {} connected.", source);
-      stateIDs.emplace(source, 0);
+      NET_INFO("Player {} connected.", source);
+      clients.insert(NetworkClient{.peer = net.GetPeer(source),
+                                   .clientID = source,
+                                   .lastReceivedStateID = -1});
+      net.SendGlobalPacket(PlayerConnectedPacket(source));
+      net.SendPacketToClient(source, BasicNetworkMessages::Hello);
       break;
     }
     case static_cast<uint16_t>(BasicNetworkMessages::Shutdown): {
-      NET_LOG("Client {} disconnected.", source);
-      stateIDs.erase(source);
+      NET_INFO("Player {} disconnected.", source);
+      clients.erase(source);
       break;
     }
     case static_cast<uint16_t>(BasicNetworkMessages::Ping): {
@@ -93,38 +169,21 @@ public:
 
   void UpdateMinimumState(::NCL::CSC8503::GameWorld &world) {
     // Periodically remove old data from the server
-    int minID = INT_MAX;
-    int maxID = 0; // we could use this to see if a player is lagging behind?
-    for (auto i : stateIDs) {
-      minID = std::min(minID, i.second);
-      maxID = std::max(maxID, i.second);
-    }
-    // every client has acknowledged reaching at least state minID
-    // so we can get rid of any old states!
-    std::vector<::NCL::CSC8503::GameObject *>::const_iterator first;
-    std::vector<::NCL::CSC8503::GameObject *>::const_iterator last;
-    world.GetObjectIterators(first, last);
-    for (auto i = first; i != last; ++i) {
-      auto *o = (*i)->GetNetworkObject();
+    int minID = clients.getMinimumLastReceivedStateID();
+
+    for (auto i : world) {
+      auto *o = i->GetNetworkObject();
       if (!o) {
         continue;
       }
-      o->UpdateStateHistory(
-          minID); // clear out old states so they arent taking up memory...
+      o->UpdateStateHistory(minID);
     }
-  }
-
-  int GetClientStateID(int clientID) {
-    auto i = stateIDs.find(clientID);
-    if (i != stateIDs.end()) {
-      return i->second;
-    }
-    return -1;
   }
 
   int GetPacketsToSnapshot() const { return packetsToSnapshot; }
 
   const GameServer &GetServer() const { return net; }
+  const ClientDir &GetClients() const { return clients; }
 
 protected:
   const int PACKETS_PER_SNAPSHOT = 5;
@@ -133,6 +192,6 @@ protected:
   GameServer net;
   int packetsToSnapshot = 0;
   int snapshotsToStateUpdate = SNAPSHOTS_PER_STATEUPDATE;
-  std::map<int, int> stateIDs;
+  ClientDir clients;
 };
 } // namespace NCL::CSC8503

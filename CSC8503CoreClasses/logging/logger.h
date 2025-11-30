@@ -79,7 +79,7 @@
 #define NET_DEBUG(...) (void)0
 #endif
 #if NET_LOG_LEVEL <= SPDLOG_LEVEL_INFO
-#define NET_LOG(...)                                                           \
+#define NET_INFO(...)                                                          \
   NCL::logging::networkLogger->log(                                            \
       spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION},                 \
       spdlog::level::info, __VA_ARGS__)

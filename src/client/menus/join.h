@@ -4,6 +4,7 @@
 #include "Window.h"
 #include "ai/automata/PushdownState.h"
 #include "gui.h"
+#include "menus/connectionGuard.h"
 #include "scenes/collisionTest.h"
 #include "scenes/default.h"
 
@@ -13,6 +14,12 @@ public:
 
   PushdownResult OnUpdate(float dt,
                           NCL::CSC8503::PushdownState **newState) override {
+    if (nextState.has_value()) {
+      *newState = new ConnectionGuard(game, nextState.value());
+      nextState.reset();
+      return Push;
+    }
+
     if (connecting) {
       ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f,
                                      ImGui::GetIO().DisplaySize.y * 0.5f),
@@ -79,7 +86,7 @@ public:
       }
       case ClientGame::ConnectionFailure::None: {
         connecting = false;
-        *newState = new DefaultScene(game);
+        nextState = new DefaultScene(game);
         result = Push;
       }
       }
@@ -110,4 +117,5 @@ protected:
 
   bool connecting = false;
   std::optional<std::string_view> errorMsg = std::nullopt;
+  std::optional<NCL::CSC8503::PushdownState *> nextState = std::nullopt;
 };

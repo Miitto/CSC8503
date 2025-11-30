@@ -8,6 +8,7 @@ namespace CSC8503 {
 class GameWorld;
 class GameServer : public NetworkBase {
 public:
+  GameServer() = delete;
   GameServer(uint16_t onPort, int maxClients);
   ~GameServer();
 
@@ -25,10 +26,9 @@ public:
   bool SendGlobalPacket(GamePacket &&packet);
 
   virtual void UpdateServer();
-
-protected:
   ENetPeer *GetPeer(int id);
 
+protected:
   uint16_t port;
   int clientMax;
   int clientCount;

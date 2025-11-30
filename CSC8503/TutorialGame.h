@@ -31,6 +31,7 @@ public:
 
   void SetActive(bool state) { active = state; }
   void SetCameraActive(bool state) { updateCamera = state; }
+  void SetShowUi(bool state) { showUi = state; }
 
 protected:
   void InitCamera();
@@ -78,6 +79,7 @@ protected:
 
   bool active = true;
   bool updateCamera = true;
+  bool showUi = true;
 
   GameWorld &world;
   GameTechRendererInterface &renderer;

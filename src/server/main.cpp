@@ -1,3 +1,4 @@
+#include "DummyWindow.h"
 #include "ServerGame.h"
 #include "physics/PhysicsSystem.h"
 #include <DummyRenderer.h>
@@ -6,12 +7,15 @@ using namespace NCL;
 using namespace CSC8503;
 
 int main() {
-  GameWorld *world = new GameWorld();
-  PhysicsSystem *physics = new PhysicsSystem(*world);
+  DummyWindow w{};
+  GameWorld world = GameWorld();
+  PhysicsSystem physics = PhysicsSystem(world);
 
   DummyRenderer renderer = DummyRenderer();
 
-  ServerGame *g = new ServerGame(*world, renderer, *physics);
+  ServerGame g = ServerGame(world, renderer, physics);
+  g.SetCameraActive(false);
+  g.SetShowUi(false);
 
   auto lastFrameTime = std::chrono::high_resolution_clock::now();
 
@@ -30,9 +34,9 @@ int main() {
                 // frame time!
     }
 
-    g->UpdateGame(dt);
+    g.UpdateGame(dt);
 
-    world->UpdateWorld(dt);
-    physics->Update(dt);
+    world.UpdateWorld(dt);
+    physics.Update(dt);
   }
 }

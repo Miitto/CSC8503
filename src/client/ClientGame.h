@@ -25,6 +25,7 @@ protected:
     std::chrono::steady_clock::time_point lastPingSentTime;
     int attemptsLeft = 3;
     std::function<void(ConnectionFailure)> cb;
+    uint16_t messageType = static_cast<uint16_t>(BasicNetworkMessages::Ping);
   };
 
 public:
@@ -41,10 +42,7 @@ public:
     if (!net->Connect(ip))
       return false;
 
-    net->RegisterPacketHandler(BasicNetworkMessages::Delta_State, this);
-    net->RegisterPacketHandler(BasicNetworkMessages::Full_State, this);
-    net->RegisterPacketHandler(BasicNetworkMessages::Player_Connected, this);
-    net->RegisterPacketHandler(BasicNetworkMessages::Player_Disconnected, this);
+    SetupPacketHandlers();
 
     return true;
   }
@@ -56,16 +54,13 @@ public:
       return;
     }
 
-    net->RegisterPacketHandler(BasicNetworkMessages::Delta_State, this);
-    net->RegisterPacketHandler(BasicNetworkMessages::Full_State, this);
-    net->RegisterPacketHandler(BasicNetworkMessages::Player_Connected, this);
-    net->RegisterPacketHandler(BasicNetworkMessages::Player_Disconnected, this);
-    net->RegisterPacketHandler(BasicNetworkMessages::Ping_Response, this);
+    SetupPacketHandlers();
 
-    net->SendPacket(BasicNetworkMessages::Ping);
+    net->SendPacket(BasicNetworkMessages::Hello);
     pingInfo = {
         .lastPingSentTime = std::chrono::high_resolution_clock::now(),
         .cb = cb,
+        .messageType = static_cast<uint16_t>(BasicNetworkMessages::Hello),
     };
   }
 
@@ -78,11 +73,15 @@ public:
 
   void StartLevel();
 
+  void UpdateGame(float dt) override;
+
   void ReceivePacket(GamePacketType type, GamePacket *payload,
                      int source) override;
 
 protected:
   void NetworkUpdate(float dt) override;
+
+  void SetupPacketHandlers();
 
   int lastFullSync = 0;
 

@@ -6,7 +6,7 @@ struct _ENetEvent;
 
 #include <spdlog/fmt/bundled/format.h>
 
-enum class BasicNetworkMessages : uint16_t {
+enum BasicNetworkMessages : uint16_t {
   /// @brief Packet sent client->server when first connecting
   Hello,
   /// @brief Quick 0-size packet to check latency / connection

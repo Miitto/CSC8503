@@ -10,7 +10,7 @@ PUBLIC
 PRIVATE
   ClientGame.cpp
   main.cpp
- "menus/solo.h" "menus/multiplayer.h" "menus/host.h" "menus/join.h")
+ "menus/solo.h" "menus/multiplayer.h" "menus/host.h" "menus/join.h" "menus/connectionGuard.h")
 
 target_link_libraries(${PROJECT_NAME} PRIVATE CSC8503::CSC8503)
 

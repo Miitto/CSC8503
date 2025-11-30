@@ -10,7 +10,7 @@ PUBLIC
 PRIVATE
   ServerGame.cpp
   main.cpp
- "DummyRenderer.h")
+ "DummyRenderer.h" "DummyWindow.h")
 
 target_link_libraries(${PROJECT_NAME} PRIVATE CSC8503::CSC8503)
 

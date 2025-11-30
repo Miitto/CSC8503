@@ -22,6 +22,7 @@ protected:
   virtual void NetworkUpdate(float dt) = 0;
 
   float timeToNextPacket;
+  float timeSinceLastNetUpdate = 0.0f;
 
   std::vector<NetworkObject *> networkObjects;
 };

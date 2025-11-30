@@ -20,6 +20,11 @@ public:
 
   void StartLevel() override;
 
+  void UpdateGame(float dt) override {
+    net.UpdateServer();
+    NCL::CSC8503::NetworkedGame::UpdateGame(dt);
+  }
+
 protected:
   virtual void NetworkUpdate(float dt) override;
 

@@ -23,6 +23,7 @@ bool NetworkObject::ReadPacket(GamePacket &p) {
     return false;
   }
 }
+
 bool NetworkObject::WritePacket(GamePacket **p, bool deltaFrame, int stateID) {
   if (deltaFrame) {
     if (!WriteDeltaPacket(p, stateID)) {

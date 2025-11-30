@@ -1,6 +1,5 @@
 #include "NetworkedGame.h"
 #include "GameWorld.h"
-#include "NetworkPlayer.h"
 #include "Window.h"
 #include "networking/GameClient.h"
 #include "networking/GameServer.h"
@@ -33,10 +32,15 @@ NetworkedGame::NetworkedGame(GameWorld &gameWorld,
 NetworkedGame::~NetworkedGame() {}
 
 void NetworkedGame::UpdateGame(float dt) {
+  timeSinceLastNetUpdate += dt;
+  if (!active)
+    return;
+
   timeToNextPacket -= dt;
   if (timeToNextPacket < 0) {
-    NetworkUpdate(dt);
+    NetworkUpdate(timeSinceLastNetUpdate);
     timeToNextPacket += 1.0f / 20.0f; // 20hz server/client update
+    timeSinceLastNetUpdate = 0.0f;
   }
 
   TutorialGame::UpdateGame(dt);
