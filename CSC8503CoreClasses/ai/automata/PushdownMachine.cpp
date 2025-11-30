@@ -43,6 +43,18 @@ bool PushdownMachine::Update(float dt) {
       stateStack.push(activeState);
       activeState->OnInit();
     } break;
+    case PushdownState::ReplaceBelow: {
+      activeState->OnDestroy();
+      delete activeState;
+      stateStack.pop();
+      auto topState = stateStack.top();
+      topState->OnDestroy();
+      delete topState;
+      stateStack.pop();
+      stateStack.push(newState);
+      activeState = stateStack.top();
+      activeState->OnInit();
+    } break;
     }
   } else {
     stateStack.push(initialState);

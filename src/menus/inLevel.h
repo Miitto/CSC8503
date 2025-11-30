@@ -7,9 +7,9 @@
 #include "imgui/imgui.h"
 #include "menus/pause.h"
 
-class IScene : public NCL::CSC8503::PushdownState {
+class InLevel : public NCL::CSC8503::PushdownState {
 public:
-  IScene(TutorialGame &game) : game(game) {}
+  InLevel(ClientGame &game) : game(game) {}
 
   PushdownResult OnUpdate(float dt,
                           NCL::CSC8503::PushdownState **newState) override {
@@ -30,8 +30,8 @@ public:
     game.SetCameraActive(true);
   }
 
-  void OnDestroy() override {}
+  void OnDestroy() override { game.Clear(); }
 
 protected:
-  TutorialGame &game;
+  ClientGame &game;
 };

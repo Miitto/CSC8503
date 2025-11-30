@@ -15,14 +15,20 @@ void NetworkBase::Initialise() { enet_initialize(); }
 void NetworkBase::Destroy() { enet_deinitialize(); }
 
 bool NetworkBase::ProcessPacket(GamePacket *packet, int peerID) {
-  auto iters = GetPacketHandlers(packet->type);
+  auto type = packet->type;
+  NET_TRACE("Recieved packet of type {} from peer {}", type, peerID);
+  auto iters = GetPacketHandlers(type);
   if (!iters.has_value()) {
-    NET_DEBUG("No handlers for packet type {}", packet->type);
+    NET_DEBUG("No handlers for packet type {}", type);
     return false;
   }
 
-  for (auto &handler : *iters) {
-    handler.second->ReceivePacket(packet->type, packet, peerID);
+  // TODO: WTF, using a ranged for loop here causes iterator Orphan_me_v3 to
+  // access violate?? Only if logging is set to DEBUG, TRACE is fine
+
+  for (auto it = iters->first; it != iters->last; ++it) {
+    auto &handler = *it;
+    handler.second->ReceivePacket(type, packet, peerID);
   }
 
   return true;

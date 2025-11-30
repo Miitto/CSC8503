@@ -3,10 +3,11 @@
 #include "Window.h"
 #include "ai/automata/PushdownState.h"
 #include "gui.h"
+#include "levelSelect.h"
 
 class PauseMenu : public NCL::CSC8503::PushdownState {
 public:
-  PauseMenu(TutorialGame &game) : game(game) {}
+  PauseMenu(ClientGame &game) : game(game) {}
 
   PushdownResult OnUpdate(float dt,
                           NCL::CSC8503::PushdownState **newState) override {
@@ -26,6 +27,12 @@ public:
                                      ImGuiWindowFlags_NoDecoration);
     if (frame.button("Resume"))
       return Pop;
+
+    if (frame.button("Level Select")) {
+      *newState = new LevelSelectMenu(game);
+      return Push;
+    }
+
     if (frame.button("Quit to Main Menu")) {
       return Reset;
     }
@@ -47,5 +54,5 @@ public:
   }
 
 protected:
-  TutorialGame &game;
+  ClientGame &game;
 };

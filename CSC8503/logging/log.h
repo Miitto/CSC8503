@@ -40,13 +40,13 @@
 #define WARN(...) (void)0
 #endif
 #if LOG_LEVEL <= SPDLOG_LEVEL_ERROR
-#define ERROR(...)                                                             \
+#define ERR(...)                                                               \
   NCL::logging::mainLogger->log(                                               \
       spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION},                 \
       spdlog::level::err, __VA_ARGS__)
 
 #else
-#define ERROR(...) (void)0
+#define ERR(...) (void)0
 #endif
 #if LOG_LEVEL <= SPDLOG_LEVEL_CRITICAL
 #define CRITICAL(...)                                                          \

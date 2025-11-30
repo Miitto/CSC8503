@@ -5,6 +5,7 @@
 #include "networking/GameServer.h"
 #include "networking/NetworkObject.h"
 #include <array>
+#include <levels.h>
 
 #define COLLISION_MSG 30
 
@@ -29,7 +30,7 @@ ClientGame::ClientGame(GameWorld &gameWorld,
 }
 
 void ClientGame::SetupPacketHandlers() {
-  constexpr std::array<uint16_t, 7> handledMessages = {
+  constexpr std::array<uint16_t, 8> handledMessages = {
       BasicNetworkMessages::Full_State,
       BasicNetworkMessages::Delta_State,
       BasicNetworkMessages::Ping_Response,
@@ -37,10 +38,10 @@ void ClientGame::SetupPacketHandlers() {
       BasicNetworkMessages::Player_Disconnected,
       BasicNetworkMessages::Shutdown,
       BasicNetworkMessages::Hello,
-  };
+      BasicNetworkMessages::LevelChange};
 
   for (auto msgID : handledMessages) {
-    net->RegisterPacketHandler(GamePacketType(msgID), this);
+    net->RegisterPacketHandler(msgID, this);
   }
 }
 
@@ -98,7 +99,34 @@ void ClientGame::PingCheck(float dt) {
   }
 }
 
-void ClientGame::StartLevel() {}
+void ClientGame::SelectLevel(Level level) {
+  switch (GetServerState()) {
+  case ServerState::Host:
+    serverNet->OnLevelUpdate(level);
+    [[fallthrough]];
+  case ServerState::Singleplayer:
+    StartLevel(level);
+    break;
+  }
+}
+
+void ClientGame::StartLevel(Level level) {
+  switch (level) {
+  case Level::Default:
+    InitWorld();
+    break;
+  case Level::CollisionTest:
+    InitCollisionTest();
+    break;
+  default:
+    NET_WARN("Unknown level requested: {}", static_cast<int>(level));
+    return;
+  }
+
+  if (serverNet) {
+    serverNet->OnLevelUpdate(level);
+  }
+}
 
 void ClientGame::UpdateGame(float dt) {
   if (net) {
@@ -116,45 +144,52 @@ void ClientGame::ReceivePacket(GamePacketType type, GamePacket *payload,
                                int source) {
   int packetId = -1;
   switch (type.type) {
-  case static_cast<uint16_t>(BasicNetworkMessages::Full_State): {
+  case BasicNetworkMessages::Full_State: {
     auto fs = GamePacket::as<FullPacket>(payload);
     lastFullSync = fs->fullState.stateID;
     packetId = lastFullSync;
     break;
   }
-  case static_cast<uint16_t>(BasicNetworkMessages::Delta_State): {
+  case BasicNetworkMessages::Delta_State: {
     auto ds = GamePacket::as<DeltaPacket>(payload);
     packetId = ds->fullID;
     break;
   }
-  case static_cast<uint16_t>(BasicNetworkMessages::Ping_Response): {
-    if (pingInfo && pingInfo->messageType ==
-                        static_cast<uint16_t>(BasicNetworkMessages::Ping)) {
+  case BasicNetworkMessages::Ping_Response: {
+    NET_DEBUG("Received ping response from server.");
+    if (pingInfo && pingInfo->messageType == BasicNetworkMessages::Ping) {
       pingInfo->cb(ConnectionFailure::None);
       pingInfo = std::nullopt;
     }
     break;
   }
-  case static_cast<uint16_t>(BasicNetworkMessages::Player_Connected): {
+  case BasicNetworkMessages::Player_Connected: {
     auto pc = GamePacket::as<PlayerConnectedPacket>(payload);
     NET_INFO("Player {} has connected.", pc->id);
     break;
   }
-  case static_cast<uint16_t>(BasicNetworkMessages::Player_Disconnected): {
+  case BasicNetworkMessages::Player_Disconnected: {
     auto pd = GamePacket::as<PlayerDisconnectedPacket>(payload);
     NET_INFO("Player {} has disconnected.", pd->id);
     break;
   }
-  case static_cast<uint16_t>(BasicNetworkMessages::Shutdown): {
+  case BasicNetworkMessages::Shutdown: {
     NET_INFO("Server has shutdown the connection.");
     break;
   }
-  case static_cast<uint16_t>(BasicNetworkMessages::Hello): {
-    if (pingInfo && pingInfo->messageType ==
-                        static_cast<uint16_t>(BasicNetworkMessages::Hello)) {
+  case BasicNetworkMessages::Hello: {
+    NET_DEBUG("Received hello from server.");
+    if (pingInfo && pingInfo->messageType == BasicNetworkMessages::Hello) {
       pingInfo->cb(ConnectionFailure::None);
       pingInfo = std::nullopt;
     }
+    break;
+  }
+  case BasicNetworkMessages::LevelChange: {
+    auto packet = GamePacket::as<LevelChangePacket>(payload);
+    auto level = static_cast<Level>(packet->level);
+    NET_INFO("Changing to level {}", level);
+    StartLevel(level);
     break;
   }
   }

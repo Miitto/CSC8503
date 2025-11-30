@@ -32,6 +32,9 @@ enum BasicNetworkMessages : uint16_t {
   /// @brief Sent client->server when a client is disconnecting, or
   /// server->clients when server shutting down
   Shutdown,
+  /// @brief Sent server->clients when the level is changing, or client->server
+  /// to request a level change
+  LevelChange,
   /// @brief Max built-in message ID for custom messages to start from
   BUILTIN_MAX
 };
@@ -173,10 +176,11 @@ protected:
     if (range.first == packetHandlers.end()) {
       return std::nullopt; // no handlers for this message type!
     }
+
     return IteratorRange{.first = range.first, .last = range.second};
   }
 
   _ENetHost *netHandle = nullptr;
 
-  std::multimap<GamePacketType, PacketReceiver *> packetHandlers;
+  std::multimap<GamePacketType, PacketReceiver *> packetHandlers = {};
 };

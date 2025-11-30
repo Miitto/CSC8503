@@ -19,6 +19,8 @@ public:
     NoPingResponse,
   };
 
+  enum class ServerState { Singleplayer, Host, Client };
+
 protected:
   struct PingInfo {
     float timeSinceLastPing = 0.0f;
@@ -66,12 +68,20 @@ public:
 
   void Disconnect();
 
+  ServerState GetServerState() const {
+    if (serverNet.has_value())
+      return ServerState::Host;
+    if (net.has_value())
+      return ServerState::Client;
+    return ServerState::Singleplayer;
+  }
+
   void InitServer(uint16_t port, int maxClients);
   void ShutdownServer();
 
   void PingCheck(float dt);
 
-  void StartLevel();
+  void SelectLevel(Level level);
 
   void UpdateGame(float dt) override;
 
@@ -82,6 +92,8 @@ protected:
   void NetworkUpdate(float dt) override;
 
   void SetupPacketHandlers();
+
+  void StartLevel(Level level);
 
   int lastFullSync = 0;
 

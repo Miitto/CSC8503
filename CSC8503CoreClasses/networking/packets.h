@@ -48,7 +48,8 @@ struct ClientPacket : public GamePacket {
   char buttonstates[8] = {};
 
   ClientPacket()
-      : GamePacket(BasicNetworkMessages::PlayerState, sizeof(ClientPacket)) {}
+      : GamePacket(BasicNetworkMessages::PlayerState,
+                   sizeof(ClientPacket) - sizeof(GamePacket)) {}
 };
 
 struct AckPacket : public GamePacket {
@@ -76,5 +77,13 @@ struct StringPacket : public GamePacket {
   std::string get() const { return std::string(data, size); }
   operator std::string() const { return get(); }
   operator std::string_view() const { return view(); }
+};
+
+struct LevelChangePacket : public GamePacket {
+  uint8_t level;
+  LevelChangePacket(uint8_t level)
+      : GamePacket(BasicNetworkMessages::LevelChange,
+                   sizeof(LevelChangePacket) - sizeof(GamePacket)),
+        level(level) {}
 };
 } // namespace NCL::CSC8503

@@ -64,6 +64,8 @@ OGLRenderer::OGLRenderer(Window &w) : RendererBase(w) {
   ImGui_ImplWin32_InitForOpenGL(realWindow->GetHandle());
 #endif
   ImGui_ImplOpenGL3_Init();
+
+  ImGui::StyleColorsDark();
 }
 
 OGLRenderer::~OGLRenderer() {

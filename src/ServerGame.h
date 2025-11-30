@@ -18,8 +18,6 @@ public:
   void ReceivePacket(GamePacketType type, GamePacket *payload,
                      int source) override;
 
-  void StartLevel() override;
-
   void UpdateGame(float dt) override {
     net.UpdateServer();
     NCL::CSC8503::NetworkedGame::UpdateGame(dt);
@@ -28,8 +26,11 @@ public:
 protected:
   virtual void NetworkUpdate(float dt) override;
 
+  void StartLevel(Level level);
+
   void BroadcastSnapshot(bool deltaFrame);
   void UpdateMinimumState();
 
   NCL::CSC8503::ServerCore net;
+  bool started = false;
 };

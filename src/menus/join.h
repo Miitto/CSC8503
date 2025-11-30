@@ -1,12 +1,9 @@
 #pragma once
 
 #include "ClientGame.h"
-#include "Window.h"
 #include "ai/automata/PushdownState.h"
 #include "gui.h"
 #include "menus/connectionGuard.h"
-#include "scenes/collisionTest.h"
-#include "scenes/default.h"
 
 class JoinMenu : public NCL::CSC8503::PushdownState {
 public:
@@ -86,7 +83,7 @@ public:
       }
       case ClientGame::ConnectionFailure::None: {
         connecting = false;
-        nextState = new DefaultScene(game);
+        nextState = new InLevel(game);
         result = Push;
       }
       }

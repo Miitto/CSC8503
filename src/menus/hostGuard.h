@@ -4,12 +4,10 @@
 #include "Window.h"
 #include "ai/automata/PushdownState.h"
 #include "gui.h"
-#include "scenes/collisionTest.h"
-#include "scenes/default.h"
 
-class ConnectionGuard : public NCL::CSC8503::PushdownState {
+class HostGuard : public NCL::CSC8503::PushdownState {
 public:
-  ConnectionGuard(ClientGame &game, NCL::CSC8503::PushdownState *setState)
+  HostGuard(ClientGame &game, NCL::CSC8503::PushdownState *setState)
       : game(game), nextState(setState) {}
 
   PushdownResult OnUpdate(float dt,
@@ -25,7 +23,7 @@ public:
   void OnAwake() override { shouldPop = true; }
 
   void OnDestroy() override {
-    game.Disconnect();
+    game.ShutdownServer();
     game.Clear();
   }
 

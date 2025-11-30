@@ -16,8 +16,6 @@ public:
 
   void UpdateGame(float dt) override;
 
-  virtual void StartLevel() = 0;
-
 protected:
   virtual void NetworkUpdate(float dt) = 0;
 
