@@ -496,7 +496,31 @@ bool CollisionDetection::AABBCapsuleIntersection(
     const AABBVolume &volumeA, const Transform &worldTransformA,
     const CapsuleVolume &volumeB, const Transform &worldTransformB,
     CollisionInfo &collisionInfo) {
-  return false;
+  auto boxSize = volumeA.GetHalfDimensions();
+
+  auto aPos =
+      worldTransformB.GetPosition() + (worldTransformB.GetOrientation() *
+                                       Vector3(0, volumeB.GetHalfHeight(), 0));
+  auto bPos =
+      worldTransformA.GetPosition() + (worldTransformB.GetOrientation() *
+                                       Vector3(0, -volumeB.GetHalfHeight(), 0));
+
+  auto ab = bPos - aPos;
+
+  auto t = Vector::Dot(worldTransformA.GetPosition() - aPos, ab) /
+           Vector::Dot(ab, ab);
+
+  t = std::clamp(t, 0.0f, 1.0f);
+
+  auto closestPoint = aPos + ab * t - worldTransformA.GetPosition();
+
+  SphereVolume sphere(volumeB.GetRadius());
+
+  Transform trans = worldTransformB;
+  trans.SetPosition(closestPoint + worldTransformA.GetPosition());
+
+  return AABBSphereIntersection(volumeA, worldTransformA, sphere, trans,
+                                collisionInfo);
 }
 
 bool CollisionDetection::OBBIntersection(const OBBVolume &volumeA,
@@ -638,7 +662,76 @@ bool CollisionDetection::CapsuleIntersection(const CapsuleVolume &volumeA,
                                              const CapsuleVolume &volumeB,
                                              const Transform &worldTransformB,
                                              CollisionInfo &collisionInfo) {
-  return false;
+  auto aaPos =
+      worldTransformA.GetPosition() + (worldTransformA.GetOrientation() *
+                                       Vector3(0, volumeA.GetHalfHeight(), 0));
+
+  auto abPos =
+      worldTransformA.GetPosition() + (worldTransformA.GetOrientation() *
+                                       Vector3(0, -volumeA.GetHalfHeight(), 0));
+
+  auto baPos =
+      worldTransformB.GetPosition() + (worldTransformB.GetOrientation() *
+                                       Vector3(0, volumeB.GetHalfHeight(), 0));
+  auto bbPos =
+      worldTransformB.GetPosition() + (worldTransformB.GetOrientation() *
+                                       Vector3(0, -volumeB.GetHalfHeight(), 0));
+
+  Vector3 d1 = abPos - aaPos;
+  Vector3 d2 = bbPos - baPos;
+  Vector3 r = aaPos - baPos;
+
+  const float EPS = 1e-6f;
+
+  float a = Vector::Dot(d1, d1);
+  float e = Vector::Dot(d2, d2);
+  float f = Vector::Dot(d2, r);
+
+  float s = 0.0f;
+  float t = 0.0f;
+
+  if (a <= EPS && e <= EPS) {
+    // NOOP
+  } else if (a <= EPS && e > EPS) {
+    t = std::clamp(f / e, 0.0f, 1.0f);
+  } else if (e <= EPS) {
+    float c = Vector::Dot(d1, r);
+    s = std::clamp(-c / a, 0.0f, 1.0f);
+  } else {
+    float b = Vector::Dot(d1, d2);
+    float c = Vector::Dot(d1, r);
+    float denom = a * e - b * b;
+
+    if (denom != 0.0f) {
+      s = std::clamp((b * f - c * e) / denom, 0.0f, 1.0f);
+    } else {
+      s = 0.0f;
+    }
+
+    t = (b * s + f) / e;
+
+    if (t < 0.0f) {
+      t = 0.0f;
+      s = std::clamp(-c / a, 0.0f, 1.0f);
+    } else if (t > 1.0f) {
+      t = 1.0f;
+      s = std::clamp((b - c) / a, 0.0f, 1.0f);
+    }
+  }
+
+  Vector3 c1 = aaPos + d1 * s; // closest point on A segment (world)
+  Vector3 c2 = baPos + d2 * t; // closest point on B segment (world)
+
+  SphereVolume sphereA(volumeA.GetRadius());
+  SphereVolume sphereB(volumeB.GetRadius());
+
+  Transform transA = worldTransformA;
+  Transform transB = worldTransformB;
+
+  transA.SetPosition(c1);
+  transB.SetPosition(c2);
+
+  return SphereIntersection(sphereA, transA, sphereB, transB, collisionInfo);
 }
 
 Matrix4 GenerateInverseView(const Camera &c) {

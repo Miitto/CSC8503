@@ -244,8 +244,6 @@ void TutorialGame::InitWorld() {
 void TutorialGame::InitCollisionTest() {
   Clear();
 
-  AddFloorToWorld(Vector3(0, -20, 0));
-
   auto addSet = [this](float o) {
     AddSphereToWorld(Vector3(o, 5, 0), 1.0f, 10.0f);
     AddCubeToWorld(Vector3(o, 5, 5), Vector3(1, 1, 1), 10.0f);
@@ -258,34 +256,34 @@ void TutorialGame::InitCollisionTest() {
   };
 
   for (int i = 0; i < 6; ++i) {
-    AddSphereToWorld(Vector3(0, 0, i * 5), 1.0f, 10.0f);
+    AddSphereToWorld(Vector3(0, 0, i * 5), 1.0f, 0.0f);
   }
   addSet(0);
 
   for (int i = 0; i < 6; ++i) {
-    AddCubeToWorld(Vector3(5, 0, i * 5), Vector3(1, 1, 1), 10.0f);
+    AddCubeToWorld(Vector3(5, 0, i * 5), Vector3(1, 1, 1), 0.0f);
   }
   addSet(5);
 
   for (int i = 0; i < 6; ++i) {
-    AddOBBToWorld(Vector3(10, 0, i * 5), Vector3(1, 1, 1), {}, 10.0f);
+    AddOBBToWorld(Vector3(10, 0, i * 5), Vector3(1, 1, 1), {}, 0.0f);
   }
   addSet(10);
 
   for (int i = 0; i < 6; ++i) {
     AddOBBToWorld(Vector3(15, 0, i * 5), Vector3(1, 1, 1),
-                  Quaternion::EulerAnglesToQuaternion(0, 45, 0), 10.0f);
+                  Quaternion::EulerAnglesToQuaternion(0, 45, 0), 0.0f);
   }
   addSet(15);
 
   for (int i = 0; i < 6; ++i) {
-    AddCapsuleToWorld(Vector3(20, 0, i * 5), 0.5f, 0.5f, {}, 10.0f);
+    AddCapsuleToWorld(Vector3(20, 0, i * 5), 0.5f, 0.5f, {}, 0.0f);
   }
   addSet(20);
 
   for (int i = 0; i < 6; ++i) {
     AddCapsuleToWorld(Vector3(25, 0, i * 5), 0.5f, 0.5f,
-                      Quaternion::EulerAnglesToQuaternion(0, 0, 90), 10.0f);
+                      Quaternion::EulerAnglesToQuaternion(0, 0, 90), 0.0f);
   }
   addSet(25);
 }
