@@ -20,7 +20,7 @@ public:
       auto frame = NCL::gui::Frame("Pane Controls");
 
       constexpr const char *cornerNames[] = {
-          "PlayerState", "Front Left", "Front Right", "Back Left", "Back Right",
+          "None", "Front Left", "Front Right", "Back Left", "Back Right",
       };
 
       if (ImGui::BeginCombo("Current Corner",
@@ -41,7 +41,7 @@ public:
 
       RayCollision closestCollision;
       if (currentCorner != None &&
-          world->Raycast(ray, closestCollision, true)) {
+          world->Raycast(ray, closestCollision, 100.f, this)) {
         auto node =
             static_cast<NCL::CSC8503::GameObject *>(closestCollision.node);
         auto offset =

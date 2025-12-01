@@ -38,7 +38,8 @@ void ClientGame::SetupPacketHandlers() {
       BasicNetworkMessages::Player_Disconnected,
       BasicNetworkMessages::Shutdown,
       BasicNetworkMessages::Hello,
-      BasicNetworkMessages::LevelChange};
+      BasicNetworkMessages::LevelChange,
+  };
 
   for (auto msgID : handledMessages) {
     net->RegisterPacketHandler(msgID, this);
@@ -106,6 +107,10 @@ void ClientGame::SelectLevel(Level level) {
     [[fallthrough]];
   case ServerState::Singleplayer:
     StartLevel(level);
+    break;
+  case ServerState::Client:
+    LevelChangePacket packet(static_cast<uint16_t>(level));
+    net->SendPacket(packet);
     break;
   }
 }

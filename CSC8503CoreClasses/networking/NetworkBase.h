@@ -170,14 +170,15 @@ protected:
     PacketHandlerIterator end() const { return last; }
   };
 
-  std::optional<IteratorRange> GetPacketHandlers(int msgID) const {
+  std::optional<std::pair<PacketHandlerIterator, PacketHandlerIterator>>
+  GetPacketHandlers(int msgID) const {
     auto range = packetHandlers.equal_range(msgID);
 
     if (range.first == packetHandlers.end()) {
       return std::nullopt; // no handlers for this message type!
     }
 
-    return IteratorRange{.first = range.first, .last = range.second};
+    return range;
   }
 
   _ENetHost *netHandle = nullptr;

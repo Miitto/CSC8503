@@ -43,8 +43,6 @@ public:
       return Pop;
     }
 
-    PushdownResult result = NoChange;
-
     auto &io = ImGui::GetIO();
     ImGui::SetNextWindowPos(
         ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f),
@@ -71,7 +69,7 @@ public:
     frame.sameLine().text(":").sameLine().width(portWidth).input("###Port",
                                                                  port, 0, 0);
 
-    auto connectCb = [&](ClientGame::ConnectionFailure failure) {
+    auto connectCb = [this](ClientGame::ConnectionFailure failure) {
       switch (failure) {
       case ClientGame::ConnectionFailure::ConnectionCreation: {
         errorMsg = "Failed to create connection to server.";
@@ -106,6 +104,7 @@ public:
     NCL::Window::GetWindow()->ShowOSPointer(true);
     NCL::Window::GetWindow()->LockMouseToWindow(false);
     errorMsg = std::nullopt;
+    result = NoChange;
     game.SetActive(false);
   }
 
@@ -115,4 +114,5 @@ protected:
   bool connecting = false;
   std::optional<std::string_view> errorMsg = std::nullopt;
   std::optional<NCL::CSC8503::PushdownState *> nextState = std::nullopt;
+  PushdownResult result = NoChange;
 };

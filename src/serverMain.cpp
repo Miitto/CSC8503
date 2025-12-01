@@ -28,7 +28,7 @@ int main() {
 
   while (true) {
     float dt = getDeltaSeconds();
-    if (dt > 0.1f) {
+    if (dt > 0.25f) {
       std::cout << "Skipping large time delta" << std::endl;
       continue; // must have hit a breakpoint or something to have a 1 second
                 // frame time!

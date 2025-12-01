@@ -26,7 +26,7 @@ bool NetworkBase::ProcessPacket(GamePacket *packet, int peerID) {
   // TODO: WTF, using a ranged for loop here causes iterator Orphan_me_v3 to
   // access violate?? Only if logging is set to DEBUG, TRACE is fine
 
-  for (auto it = iters->first; it != iters->last; ++it) {
+  for (auto it = iters->first; it != iters->second; ++it) {
     auto &handler = *it;
     handler.second->ReceivePacket(type, packet, peerID);
   }

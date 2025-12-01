@@ -73,7 +73,7 @@ void GameClient::SendPacket(GamePacketType type) {
 }
 
 void GameClient::SendPacket(GamePacket &payload) {
-  NET_DEBUG("GameClient sending packet of type {}", payload.type);
+  NET_TRACE("GameClient sending packet of type {}", payload.type);
   auto packet = enet_packet_create(&payload, payload.GetTotalSize(), 0);
 
   enet_peer_send(netPeer, 0, packet);

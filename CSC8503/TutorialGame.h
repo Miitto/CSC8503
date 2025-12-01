@@ -66,6 +66,7 @@ protected:
                              GameObject *obj = new GameObject());
   GameObject *AddOBBToWorld(const NCL::Maths::Vector3 &position,
                             NCL::Maths::Vector3 dimensions,
+                            NCL::Maths::Quaternion orientation,
                             float inverseMass = 10.0f);
 
   StateGameObject *AddStateObjectToWorld(const NCL::Maths::Vector3 &position);

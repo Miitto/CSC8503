@@ -399,7 +399,7 @@ bool CollisionDetection::AABBOBBIntersection(const AABBVolume &volumeA,
                                              CollisionInfo &collisionInfo) {
   OBBVolume boxA(volumeA.GetHalfDimensions());
 
-  return OBBIntersection(boxA, worldTransformB, volumeB, worldTransformA,
+  return OBBIntersection(boxA, worldTransformA, volumeB, worldTransformB,
                          collisionInfo);
 }
 
@@ -452,7 +452,7 @@ bool CollisionDetection::OBBIntersection(const OBBVolume &volumeA,
                        std::span<Vector3> corners) -> MinMax {
     MinMax res{
         .min = std::numeric_limits<float>::max(),
-        .max = std::numeric_limits<float>::min(),
+        .max = -std::numeric_limits<float>::max(),
     };
 
     for (const auto &corner : corners) {
@@ -523,7 +523,7 @@ bool CollisionDetection::OBBIntersection(const OBBVolume &volumeA,
     }
   }
 
-  collisionInfo.AddContactPoint(Vector3(), Vector3(), -bestAxis,
+  collisionInfo.AddContactPoint(Vector3(), Vector3(), bestAxis,
                                 leastPenetration);
 
   return true;

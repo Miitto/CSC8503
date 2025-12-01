@@ -271,7 +271,8 @@ void TutorialGame::InitCollisionTest() {
   AddSphereToWorld(Vector3(10, 0, 0), 1.0f, 10.0f);
   AddSphereToWorld(Vector3(15, 0, 0), 1.0f, 10.0f);
 
-  AddOBBToWorld(Vector3(0, 0, 5), Vector3(1, 1, 1), 10.0f);
+  AddOBBToWorld(Vector3(0, 0, 5), Vector3(1, 1, 1),
+                Quaternion::EulerAnglesToQuaternion(45, 45, 45), 10.0f);
 }
 
 #pragma region World Building Functions
@@ -355,11 +356,16 @@ GameObject *TutorialGame::AddCubeToWorld(const Vector3 &position,
 }
 
 GameObject *TutorialGame::AddOBBToWorld(const Vector3 &position,
-                                        Vector3 dimensions, float inverseMass) {
+                                        Vector3 dimensions,
+                                        Quaternion orientation,
+                                        float inverseMass) {
   GameObject *obb = new GameObject();
   OBBVolume *volume = new OBBVolume(dimensions);
   obb->SetBoundingVolume(volume);
-  obb->GetTransform().SetPosition(position).SetScale(dimensions * 2.0f);
+  obb->GetTransform()
+      .SetPosition(position)
+      .SetScale(dimensions * 2.0f)
+      .SetOrientation(orientation);
   obb->SetRenderObject(
       new RenderObject(obb->GetTransform(), cubeMesh, checkerMaterial));
   obb->SetPhysicsObject(

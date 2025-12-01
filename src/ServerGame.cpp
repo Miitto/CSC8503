@@ -6,20 +6,8 @@
 #include <GameTechRendererInterface.h>
 #include <physics/PhysicsSystem.h>
 
-#define COLLISION_MSG 30
-
 using namespace NCL;
 using namespace CSC8503;
-
-struct MessagePacket : public GamePacket {
-  short playerID = -1;
-  short messageID = -1;
-
-  MessagePacket() {
-    type = BasicNetworkMessages::Message;
-    size = sizeof(short) * 2;
-  }
-};
 
 ServerGame::ServerGame(GameWorld &gameWorld,
                        GameTechRendererInterface &renderer,
@@ -54,8 +42,6 @@ void ServerGame::StartLevel(Level level) {
     return;
   }
 
-  NET_INFO("Starting level {}", level);
-  Clear();
   net.OnLevelUpdate(level);
 }
 
