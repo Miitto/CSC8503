@@ -11,6 +11,7 @@ set(Header_Files
     "NetworkedGame.h"
     "Oscillator.h"
     "Pane.h"
+    "Player.h"
     "StateGameObject.h"
     "TutorialGame.h"
 )
@@ -23,9 +24,12 @@ set(Source_Files
     "GameTechVulkanRenderer.cpp"
     "NetworkedGame.cpp"
     "Oscillator.cpp"
+    "Player.cpp"
     "StateGameObject.cpp"
     "TutorialGame.cpp"
 )
+
+source_group("Source Files" FILES ${Source_Files})
 
 if(USE_VULKAN)
 	file(GLOB SHADER_FILES ${ASSET_ROOT}/Shaders/VK/*.*)
@@ -38,7 +42,6 @@ else()
 	list(REMOVE_ITEM Source_Files ${CMAKE_CURRENT_SOURCE_DIR}/GameTechVulkanRenderer.cpp)
 endif()
 
-source_group("Source Files" FILES ${Source_Files})
 
 set(ALL_FILES
     ${Header_Files}

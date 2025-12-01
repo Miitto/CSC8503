@@ -180,7 +180,74 @@ bool CollisionDetection::RayCapsuleIntersection(const Ray &r,
                                                 const Transform &worldTransform,
                                                 const CapsuleVolume &volume,
                                                 RayCollision &collision) {
-  return false;
+  // https://gist.github.com/jdryg/ecde24d34aa0ce2d4d87
+  auto aPos =
+      worldTransform.GetPosition() +
+      (worldTransform.GetOrientation() * Vector3(0, volume.GetHalfHeight(), 0));
+  auto bPos =
+      worldTransform.GetPosition() + (worldTransform.GetOrientation() *
+                                      Vector3(0, -volume.GetHalfHeight(), 0));
+
+  auto ab = bPos - aPos;
+  auto ao = r.GetPosition() - aPos;
+
+  auto abDotDir = Vector::Dot(ab, r.GetDirection());
+  auto abDotAo = Vector::Dot(ab, ao);
+  auto abDotAb = Vector::Dot(ab, ab);
+
+  auto m = abDotDir / abDotAb;
+  auto n = abDotAo / abDotAb;
+
+  auto q = r.GetDirection() - (ab * m);
+  auto R = ao - (ab * n);
+
+  auto a = Vector::Dot(q, q);
+  auto b = 2.0f * Vector::Dot(q, R);
+  auto c = Vector::Dot(R, R) - (volume.GetRadius() * volume.GetRadius());
+
+  SphereVolume sphere(volume.GetRadius());
+  Transform tA;
+
+  if (a == 0.0f) {
+    SphereVolume sphere(volume.GetRadius());
+    tA.SetPosition(aPos);
+    bool collided = RaySphereIntersection(r, tA, sphere, collision);
+    RayCollision tempCollision;
+    tA.SetPosition(bPos);
+    bool collidedB = RaySphereIntersection(r, tA, sphere, tempCollision);
+    if (collidedB && tempCollision.rayDistance < collision.rayDistance) {
+      collision = tempCollision;
+    }
+    return collided || collidedB;
+  }
+
+  float discriminant = b * b - 4 * a * c;
+
+  if (discriminant < 0.0f) {
+    return false;
+  }
+
+  float sqrtDisc = sqrtf(discriminant);
+  float t1 = (-b - sqrtDisc) / (2.0f * a);
+  float t2 = (-b + sqrtDisc) / (2.0f * a);
+
+  if (t1 > t2) {
+    std::swap(t1, t2);
+  }
+
+  float k1 = m * t1 + n;
+  float k2 = m * t2 + n;
+  if (k1 < 0.0f || k2 < 0.0) {
+    tA.SetPosition(aPos);
+    return RaySphereIntersection(r, tA, sphere, collision);
+  } else if (k1 > 1.0f || k2 > 1.0f) {
+    tA.SetPosition(bPos);
+    return RaySphereIntersection(r, tA, sphere, collision);
+  }
+
+  collision.rayDistance = t1;
+  collision.collidedAt = r.GetPosition() + r.GetDirection() * t1;
+  return true;
 }
 
 bool CollisionDetection::ObjectIntersection(GameObject *a, GameObject *b,
@@ -361,7 +428,29 @@ bool CollisionDetection::SphereCapsuleIntersection(
     const SphereVolume &volumeA, const Transform &worldTransformA,
     const CapsuleVolume &volumeB, const Transform &worldTransformB,
     CollisionInfo &collisionInfo) {
-  return false;
+  auto spherePos = worldTransformA.GetPosition();
+
+  auto aPos =
+      worldTransformB.GetPosition() + (worldTransformB.GetOrientation() *
+                                       Vector3(0, volumeB.GetHalfHeight(), 0));
+  auto pBos =
+      worldTransformB.GetPosition() + (worldTransformB.GetOrientation() *
+                                       Vector3(0, -volumeB.GetHalfHeight(), 0));
+
+  auto ab = pBos - aPos;
+
+  auto t = Vector::Dot(spherePos - aPos, ab) / Vector::Dot(ab, ab);
+
+  t = std::clamp(t, 0.0f, 1.0f);
+
+  auto closestPoint = aPos + ab * t;
+
+  Transform trans = worldTransformB;
+  trans.SetPosition(closestPoint);
+
+  return SphereIntersection(volumeA, worldTransformA,
+                            SphereVolume(volumeB.GetRadius()), trans,
+                            collisionInfo);
 }
 
 // AABB - Sphere Collision

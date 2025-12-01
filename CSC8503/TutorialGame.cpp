@@ -55,10 +55,10 @@ TutorialGame::TutorialGame(GameWorld &inWorld,
 
   cubeMesh = renderer.LoadMesh("cube.msh");
   sphereMesh = renderer.LoadMesh("sphere.msh");
-  catMesh = renderer.LoadMesh("ORIGAMI_Chat.msh");
+  enemyMesh = renderer.LoadMesh("ORIGAMI_Chat.msh");
   kittenMesh = renderer.LoadMesh("Kitten.msh");
 
-  enemyMesh = renderer.LoadMesh("Keeper.msh");
+  playerMesh = renderer.LoadMesh("Keeper.msh");
 
   bonusMesh = renderer.LoadMesh("19463_Kitten_Head_v1.msh");
   capsuleMesh = renderer.LoadMesh("capsule.msh");
@@ -84,25 +84,6 @@ void TutorialGame::UpdateGame(float dt) {
 
   if (updateCamera && !inSelectionMode) {
     world.GetMainCamera().UpdateCamera(dt);
-  }
-  if (pane) {
-    auto camPos = world.GetMainCamera().GetPosition();
-    auto pos = pane->GetTransform().GetPosition();
-
-    auto relPos = pos - camPos;
-    auto dir = Vector::Normalise(relPos);
-
-    auto distSq = Vector::Dot(relPos, relPos);
-
-    Ray ray(camPos, dir);
-    RayCollision rayCollision;
-    world.Raycast(ray, rayCollision, true, pane);
-    if (rayCollision.rayDistance * rayCollision.rayDistance < distSq) {
-      camPos = rayCollision.collidedAt + dir * 0.5f;
-      world.GetMainCamera().SetPosition(camPos);
-    }
-
-    NCL::Debug::DrawLine(camPos, pos, NCL::Debug::GREEN);
   }
 
   if (Window::GetKeyboard()->KeyPressed(KeyCodes::F1)) {
@@ -248,7 +229,7 @@ void TutorialGame::InitWorld() {
 
   AddFloorToWorld(Vector3(0, -20, 0));
 
-  AddPlayerToWorld(Vector3(0, -15, 0));
+  player = AddPlayerToWorld(Vector3(0, -15, 0));
 
   BridgeConstraintTest();
 
@@ -264,15 +245,49 @@ void TutorialGame::InitCollisionTest() {
   Clear();
 
   AddFloorToWorld(Vector3(0, -20, 0));
-  AddSphereToWorld(Vector3(0, 0, 0), 1.0f, 10.0f);
-  AddSphereToWorld(Vector3(0, 5, 0), 1.0f, 10.0f);
-  AddSphereToWorld(Vector3(0, 10, 0), 1.0f, 10.0f);
-  AddSphereToWorld(Vector3(5, 0, 0), 1.0f, 10.0f);
-  AddSphereToWorld(Vector3(10, 0, 0), 1.0f, 10.0f);
-  AddSphereToWorld(Vector3(15, 0, 0), 1.0f, 10.0f);
 
-  AddOBBToWorld(Vector3(0, 0, 5), Vector3(1, 1, 1),
-                Quaternion::EulerAnglesToQuaternion(45, 45, 45), 10.0f);
+  auto addSet = [this](float o) {
+    AddSphereToWorld(Vector3(o, 5, 0), 1.0f, 10.0f);
+    AddCubeToWorld(Vector3(o, 5, 5), Vector3(1, 1, 1), 10.0f);
+    AddOBBToWorld(Vector3(o, 5, 10), Vector3(1, 1, 1), {}, 10.0f);
+    AddOBBToWorld(Vector3(o, 5, 15), Vector3(1, 1, 1),
+                  Quaternion::EulerAnglesToQuaternion(0, 45, 0), 10.0f);
+    AddCapsuleToWorld(Vector3(o, 5, 20), 0.5f, 0.5f, {}, 10.0f);
+    AddCapsuleToWorld(Vector3(o, 5, 25), 0.5f, 0.5f,
+                      Quaternion::EulerAnglesToQuaternion(0, 0, 90), 10.0f);
+  };
+
+  for (int i = 0; i < 6; ++i) {
+    AddSphereToWorld(Vector3(0, 0, i * 5), 1.0f, 10.0f);
+  }
+  addSet(0);
+
+  for (int i = 0; i < 6; ++i) {
+    AddCubeToWorld(Vector3(5, 0, i * 5), Vector3(1, 1, 1), 10.0f);
+  }
+  addSet(5);
+
+  for (int i = 0; i < 6; ++i) {
+    AddOBBToWorld(Vector3(10, 0, i * 5), Vector3(1, 1, 1), {}, 10.0f);
+  }
+  addSet(10);
+
+  for (int i = 0; i < 6; ++i) {
+    AddOBBToWorld(Vector3(15, 0, i * 5), Vector3(1, 1, 1),
+                  Quaternion::EulerAnglesToQuaternion(0, 45, 0), 10.0f);
+  }
+  addSet(15);
+
+  for (int i = 0; i < 6; ++i) {
+    AddCapsuleToWorld(Vector3(20, 0, i * 5), 0.5f, 0.5f, {}, 10.0f);
+  }
+  addSet(20);
+
+  for (int i = 0; i < 6; ++i) {
+    AddCapsuleToWorld(Vector3(25, 0, i * 5), 0.5f, 0.5f,
+                      Quaternion::EulerAnglesToQuaternion(0, 0, 90), 10.0f);
+  }
+  addSet(25);
 }
 
 #pragma region World Building Functions
@@ -376,6 +391,27 @@ GameObject *TutorialGame::AddOBBToWorld(const Vector3 &position,
   return obb;
 }
 
+GameObject *TutorialGame::AddCapsuleToWorld(const Vector3 &position,
+                                            float halfHeight, float radius,
+                                            Quaternion orientation,
+                                            float inverseMass) {
+  GameObject *capsule = new GameObject();
+  CapsuleVolume *volume = new CapsuleVolume(halfHeight, radius);
+  capsule->SetBoundingVolume(volume);
+  capsule->GetTransform()
+      .SetPosition(position)
+      .SetScale(Vector3(radius * 2, halfHeight * 2, radius * 2))
+      .SetOrientation(orientation);
+  capsule->SetRenderObject(
+      new RenderObject(capsule->GetTransform(), capsuleMesh, checkerMaterial));
+  capsule->SetPhysicsObject(
+      new PhysicsObject(capsule->GetTransform(), capsule->GetBoundingVolume()));
+  capsule->GetPhysicsObject()->SetInverseMass(inverseMass);
+  capsule->GetPhysicsObject()->InitSphereInertia();
+  world.AddGameObject(capsule);
+  return capsule;
+}
+
 StateGameObject *TutorialGame::AddStateObjectToWorld(const Vector3 &position) {
   StateGameObject *apple = new StateGameObject();
 
@@ -396,12 +432,12 @@ StateGameObject *TutorialGame::AddStateObjectToWorld(const Vector3 &position) {
   return apple;
 }
 
-GameObject *TutorialGame::AddPlayerToWorld(const Vector3 &position) {
+Player *TutorialGame::AddPlayerToWorld(const Vector3 &position) {
   float meshSize = 1.0f;
   float inverseMass = 0.5f;
 
-  auto *character = new GameObject();
-  SphereVolume *volume = new SphereVolume(1.0f);
+  auto *character = new Player(world.GetMainCamera());
+  auto *volume = new CapsuleVolume(1.0f, 0.5f);
 
   character->SetBoundingVolume(volume);
 
@@ -410,12 +446,15 @@ GameObject *TutorialGame::AddPlayerToWorld(const Vector3 &position) {
       .SetPosition(position);
 
   character->SetRenderObject(
-      new RenderObject(character->GetTransform(), catMesh, notexMaterial));
+      new RenderObject(character->GetTransform(), playerMesh, notexMaterial));
   character->SetPhysicsObject(new PhysicsObject(
       character->GetTransform(), character->GetBoundingVolume()));
 
   character->GetPhysicsObject()->SetInverseMass(inverseMass);
   character->GetPhysicsObject()->InitSphereInertia();
+
+  character->GetPhysicsObject()->GetMaxLinearVelocity() = 20.f;
+  character->GetPhysicsObject()->GetMaxAngularVelocity() = 10.f;
 
   world.AddGameObject(character);
 
@@ -470,7 +509,7 @@ GameObject *TutorialGame::AddBonusToWorld(const Vector3 &position) {
 
 Pane *TutorialGame::AddPaneToWorld(const Vector3 &position,
                                    const Vector2 &dimensions, float invMass) {
-  Pane *pane = new Pane(&world);
+  Pane *pane = new Pane(&world, player);
   auto *volume = new OBBVolume(Vector3(dimensions.x, 0.1f, dimensions.y));
   pane->SetBoundingVolume(volume);
   pane->GetTransform()
@@ -596,7 +635,7 @@ bool TutorialGame::SelectObject() {
       Ray ray = CollisionDetection::BuildRayFromMouse(world.GetMainCamera());
 
       RayCollision closestCollision;
-      if (world.Raycast(ray, closestCollision, true)) {
+      if (world.Raycast(ray, closestCollision, std::nullopt, player)) {
         selectionObject = (GameObject *)closestCollision.node;
 
         selectionObject->GetRenderObject()->SetColour(Vector4(0, 1, 0, 1));
@@ -632,7 +671,7 @@ void TutorialGame::MoveSelectedObject() {
     Ray ray = CollisionDetection::BuildRayFromMouse(world.GetMainCamera());
 
     RayCollision closestCollision;
-    if (world.Raycast(ray, closestCollision, true)) {
+    if (world.Raycast(ray, closestCollision, std::nullopt)) {
       if (closestCollision.node == selectionObject) {
         selectionObject->GetPhysicsObject()->AddForceAtPosition(
             ray.GetDirection() * forceMagnitude, closestCollision.collidedAt);

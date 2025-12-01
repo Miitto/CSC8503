@@ -14,6 +14,38 @@ PhysicsObject::PhysicsObject(Transform &parentTransform,
   friction = 0.8f;
 }
 
+void PhysicsObject::ClampVelocities() {
+  if ((axisLocks & LinearX) != 0)
+    linearVelocity.x = 0.f;
+  if ((axisLocks & LinearY) != 0)
+    linearVelocity.y = 0.f;
+  if ((axisLocks & LinearZ) != 0)
+    linearVelocity.z = 0.f;
+
+  if ((axisLocks & AngularX) != 0)
+    angularVelocity.x = 0.f;
+  if ((axisLocks & AngularY) != 0)
+    angularVelocity.y = 0.f;
+  if ((axisLocks & AngularZ) != 0)
+    angularVelocity.z = 0.f;
+
+  if (maxLinearVelocity.has_value()) {
+    auto linVelMag = Vector::Length(linearVelocity);
+
+    if (linVelMag > maxLinearVelocity.value()) {
+      linearVelocity = (linearVelocity / linVelMag) * maxLinearVelocity.value();
+    }
+  }
+
+  if (maxAngularVelocity.has_value()) {
+    auto angVelMag = Vector::Length(angularVelocity);
+    if (angVelMag > maxAngularVelocity.value()) {
+      angularVelocity =
+          (angularVelocity / angVelMag) * maxAngularVelocity.value();
+    }
+  }
+}
+
 void PhysicsObject::ApplyAngularImpulse(const Vector3 &force) {
   angularVelocity += inverseInteriaTensor * force;
 }

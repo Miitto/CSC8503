@@ -1,5 +1,6 @@
 #pragma once
 #include "Pane.h"
+#include "Player.h"
 #include "RenderObject.h"
 #include "StateGameObject.h"
 
@@ -69,9 +70,14 @@ protected:
                             NCL::Maths::Quaternion orientation,
                             float inverseMass = 10.0f);
 
+  GameObject *AddCapsuleToWorld(const NCL::Maths::Vector3 &position,
+                                float halfHeight, float radius,
+                                Quaternion orientation,
+                                float inverseMass = 10.0f);
+
   StateGameObject *AddStateObjectToWorld(const NCL::Maths::Vector3 &position);
 
-  GameObject *AddPlayerToWorld(const NCL::Maths::Vector3 &position);
+  Player *AddPlayerToWorld(const NCL::Maths::Vector3 &position);
   GameObject *AddEnemyToWorld(const NCL::Maths::Vector3 &position);
   GameObject *AddBonusToWorld(const NCL::Maths::Vector3 &position);
 
@@ -103,7 +109,7 @@ protected:
   Rendering::Texture *glassTex = nullptr;
 
   // Coursework Meshes
-  Rendering::Mesh *catMesh = nullptr;
+  Rendering::Mesh *playerMesh = nullptr;
   Rendering::Mesh *kittenMesh = nullptr;
   Rendering::Mesh *enemyMesh = nullptr;
   Rendering::Mesh *bonusMesh = nullptr;
@@ -114,6 +120,7 @@ protected:
 
   // Coursework Additional functionality
   Pane *pane;
+  Player *player;
 
   GameObject *objClosest = nullptr;
 };

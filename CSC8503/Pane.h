@@ -9,7 +9,8 @@
 
 class Pane : public NCL::CSC8503::GameObject {
 public:
-  Pane(NCL::CSC8503::GameWorld *world) : GameObject("Pane"), world(world) {}
+  Pane(NCL::CSC8503::GameWorld *world, GameObject *player)
+      : GameObject("Pane"), world(world), player(player) {}
 
   void Update(float dt) override {
     if (NCL::Window::GetKeyboard()->KeyPressed(NCL::KeyCodes::C)) {
@@ -36,12 +37,15 @@ public:
     }
 
     if (NCL::Window::GetMouse()->ButtonDown(NCL::MouseButtons::Left)) {
-      Ray ray =
-          NCL::CollisionDetection::BuildRayFromMouse(world->GetMainCamera());
+      auto &cam = world->GetMainCamera();
+      Quaternion camRot = Quaternion::EulerAnglesToQuaternion(
+          cam.GetPitch(), cam.GetYaw(), 0.f);
+      auto forward = camRot * NCL::Maths::Vector3(0, 0, -1);
+      Ray ray(cam.GetPosition(), forward);
 
       RayCollision closestCollision;
       if (currentCorner != None &&
-          world->Raycast(ray, closestCollision, 100.f, this)) {
+          world->Raycast(ray, closestCollision, std::nullopt, player)) {
         auto node =
             static_cast<NCL::CSC8503::GameObject *>(closestCollision.node);
         auto offset =
@@ -111,6 +115,7 @@ public:
 
 protected:
   NCL::CSC8503::GameWorld *world;
+  GameObject *player;
 
   struct Constraints {
     NCL::CSC8503::OffsetTiedConstraint *fl;

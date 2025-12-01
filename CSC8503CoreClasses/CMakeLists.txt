@@ -43,7 +43,6 @@ source_group("AI\\Pathfinding" FILES ${AI_Pathfinding})
 set(Collision_Detection
     "collisions/AABBVolume.h"
     "collisions/CapsuleVolume.h"  
-    "collisions/CapsuleVolume.cpp"
     "collisions/CollisionDetection.h"
     "collisions/CollisionDetection.cpp"
     "collisions/CollisionVolume.h"

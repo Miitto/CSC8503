@@ -411,6 +411,8 @@ void PhysicsSystem::IntegrateVelocity(float dt) {
 
     auto &obj = *objP;
 
+    obj.ClampVelocities();
+
     auto &transform = i->GetTransform();
 
     auto pos = transform.GetPosition();

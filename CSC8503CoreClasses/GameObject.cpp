@@ -44,10 +44,21 @@ void GameObject::UpdateBroadphaseAABB() {
     Vector3 halfSizes = ((OBBVolume &)*boundingVolume).GetHalfDimensions();
     broadphaseAABB = mat * halfSizes;
   } break;
+  case VolumeType::Capsule: {
+    auto capsule = (CapsuleVolume &)*boundingVolume;
+    auto height = capsule.GetHalfHeight() + capsule.GetRadius() / 2;
+    auto width = capsule.GetRadius();
+
+    Vector3 halfSizes = Vector3(width, height, width);
+
+    auto rotMat = Matrix::Absolute(
+        Quaternion::RotationMatrix<Matrix3>(transform.GetOrientation()));
+
+    broadphaseAABB = rotMat * halfSizes;
+  } break;
   default: {
-    std::cerr << "Object " << this->name
-              << " has unsupported bounding volume type for "
-                 "GameObject::UpdateBroadphaseAABB()\n";
+    PHYS_WARN("Object type {} does not support Broadphase culling",
+              boundingVolume->type);
   }
   }
 }
