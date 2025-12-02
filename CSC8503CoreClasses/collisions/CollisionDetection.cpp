@@ -496,8 +496,6 @@ bool CollisionDetection::AABBCapsuleIntersection(
     const AABBVolume &volumeA, const Transform &worldTransformA,
     const CapsuleVolume &volumeB, const Transform &worldTransformB,
     CollisionInfo &collisionInfo) {
-  auto boxSize = volumeA.GetHalfDimensions();
-
   auto aPos =
       worldTransformB.GetPosition() + (worldTransformB.GetOrientation() *
                                        Vector3(0, volumeB.GetHalfHeight(), 0));
@@ -509,15 +507,13 @@ bool CollisionDetection::AABBCapsuleIntersection(
 
   auto t = Vector::Dot(worldTransformA.GetPosition() - aPos, ab) /
            Vector::Dot(ab, ab);
-
   t = std::clamp(t, 0.0f, 1.0f);
 
-  auto closestPoint = aPos + ab * t - worldTransformA.GetPosition();
-
+  auto closestPoint = aPos + ab * t;
   SphereVolume sphere(volumeB.GetRadius());
 
   Transform trans = worldTransformB;
-  trans.SetPosition(closestPoint + worldTransformA.GetPosition());
+  trans.SetPosition(closestPoint);
 
   return AABBSphereIntersection(volumeA, worldTransformA, sphere, trans,
                                 collisionInfo);

@@ -36,6 +36,8 @@ set(AI_Pathfinding
     "ai/pathfinding/NavigationMesh.h"
     "ai/pathfinding/NavigationMap.h"
     "ai/pathfinding/NavigationPath.h"
+    "ai/pathfinding/PathfindingService.h"
+    "ai/pathfinding/PathfindingService.cpp"
 )
 source_group("AI\\Pathfinding" FILES ${AI_Pathfinding})
 
