@@ -64,7 +64,27 @@ NavigationGrid::NavigationGrid(const std::string &filename) : NavigationGrid() {
   }
 }
 
-NavigationGrid::~NavigationGrid() { delete[] allNodes; }
+NavigationGrid::~NavigationGrid() {
+  if (allNodes)
+    delete[] allNodes;
+}
+
+NavigationGrid::NavigationGrid(NavigationGrid &&other) noexcept
+    : nodeSize(other.nodeSize), gridWidth(other.gridWidth),
+      gridHeight(other.gridHeight), gridOrigin(other.gridOrigin),
+      allNodes(other.allNodes) {
+  other.allNodes = nullptr;
+}
+
+bool NavigationGrid::containsPoint(const Vector3 &point) const {
+  float xMin = gridOrigin.x;
+  float xMax = gridOrigin.x + (gridWidth * nodeSize);
+  float zMin = gridOrigin.z;
+  float zMax = gridOrigin.z + (gridHeight * nodeSize);
+
+  return (point.x >= xMin && point.x <= xMax && point.z >= zMin &&
+          point.z <= zMax);
+}
 
 bool NavigationGrid::FindPath(const Vector3 &from, const Vector3 &to,
                               NavigationPath &outPath) {

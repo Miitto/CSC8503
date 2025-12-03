@@ -9,28 +9,27 @@ template <typename T> class Mutex;
 
 template <typename T> class LockGuard {
 public:
-  LockGuard(Mutex<T> &m) : mutex(m) {}
-  ~LockGuard() { mutex.mutex.unlock(); }
-
-  operator T &() { return mutex.value; }
-  operator const T &() const { return mutex.value; }
-  operator T *() { return &mutex.value; }
-  operator const T *() const { return &mutex.value; }
+  LockGuard(Mutex<T> &m) : mutex(m), lock(m.mutex) {}
 
   T &operator*() { return mutex.value; }
   const T &operator*() const { return mutex.value; }
 
-  T &operator->() { return mutex.value; }
-  const T &operator->() const { return mutex.value; }
+  T *operator->() { return &mutex.value; }
+  const T *operator->() const { return &mutex.value; }
 
   T &value() { return mutex.value; }
   const T &value() const { return mutex.value; }
 
+  std::unique_lock<std::mutex> &getLock() { return lock; }
+
 protected:
   Mutex<T> &mutex;
+  std::unique_lock<std::mutex> lock;
 };
 
 template <typename T> class Mutex {
+  friend class LockGuard<T>;
+
 public:
   Mutex() = default;
   Mutex(T initialValue) : value(initialValue) {}

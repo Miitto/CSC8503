@@ -1,71 +1,71 @@
 #pragma once
 
 #include "Channel.h"
+#include "NavigationGrid.h"
+#include "NavigationMesh.h"
+#include "Result.h"
 #include "Vector.h"
-#include <mutex>
+#include <future>
+#include <spdlog/fmt/bundled/format.h>
 #include <thread>
 #include <variant>
 #include <vector>
 
 namespace NCL::CSC8503 {
 
-class PathfindingServiceRequest {
-public:
-  PathfindingServiceRequest() {}
-
-  bool isComplete() const {
-    // Doesn't change any state, but we do need to lock the mutex to read 'done'
-    auto &mutex = const_cast<std::mutex &>(this->mutex);
-    auto lock = mutex.try_lock();
-    if (!lock)
-      return false;
-
-    bool d = done;
-    mutex.unlock();
-    return d;
-  }
-
-protected:
-  std::mutex mutex = {};
-  bool done = false;
-  std::vector<Maths::Vector3> path;
-};
-
-class PathfindingServiceRequestServer {
-public:
-  PathfindingServiceRequestServer(
-      const Maths::Vector3 start, const Maths::Vector3 end,
-      std::shared_ptr<PathfindingServiceRequest> clientReq)
-      : startPos(start), endPos(end), clientRequest(clientReq) {}
-
-protected:
-  Maths::Vector3 startPos;
-  Maths::Vector3 endPos;
-
-  std::shared_ptr<PathfindingServiceRequest> clientRequest;
-};
-
-class PathfindingServiceServer {
-public:
-  struct ShutdownRequest {};
-  using Request =
-      std::variant<PathfindingServiceRequestServer, ShutdownRequest>;
-
-  PathfindingServiceServer(Channel<Request> channel) : requests(channel) {}
-
-  void run();
-  void handleRequest(const PathfindingServiceRequestServer &request);
-
-protected:
-  Channel<Request> requests;
-};
-
 class PathfindingService {
 public:
+  enum class PathfindingError {
+    NoGridFound,
+    NoPathFound,
+  };
+
+  using Result = NCL::Result<NavigationPath, PathfindingError>;
+
+  struct ShutdownRequest {};
+
+  struct PathfindingRequest {
+
+    Maths::Vector3 startPos;
+    Maths::Vector3 endPos;
+
+    std::promise<PathfindingService::Result> responsePromise;
+  };
+
+  using Request = std::variant<PathfindingRequest, ShutdownRequest,
+                               NavigationGrid, NavigationMesh>;
+
   PathfindingService();
+  ~PathfindingService();
+
+  void add(NavigationGrid &&grid) { requests.send(std::move(grid)); }
+  void add(NavigationMesh &&path) { requests.send(std::move(path)); }
+
+  std::future<Result> requestPath(const Maths::Vector3 &from,
+                                  const Maths::Vector3 &to);
 
 protected:
   std::thread serverThread;
-  Channel<PathfindingServiceServer::Request> requests;
+  Channel<Request> requests;
 };
 } // namespace NCL::CSC8503
+
+template <>
+struct fmt::formatter<NCL::CSC8503::PathfindingService::PathfindingError>
+    : formatter<std::string_view> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext>
+  auto format(const NCL::CSC8503::PathfindingService::PathfindingError &type,
+              FormatContext &ctx) const {
+    const char *typeStr = "Unknown";
+    switch (type) {
+    case NCL::CSC8503::PathfindingService::PathfindingError::NoGridFound:
+      typeStr = "NoGridFound";
+      break;
+    case NCL::CSC8503::PathfindingService::PathfindingError::NoPathFound:
+      typeStr = "NoPathFound";
+      break;
+    }
+    return fmt::formatter<std::string_view>::format(typeStr, ctx);
+  }
+};

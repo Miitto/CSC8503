@@ -14,4 +14,5 @@ auto createLogger(const char *const name) {
 namespace NCL::logging {
 auto physicsLogger = createLogger("Physics");
 auto networkLogger = createLogger("Network");
+auto aiLogger = createLogger("AI");
 } // namespace NCL::logging

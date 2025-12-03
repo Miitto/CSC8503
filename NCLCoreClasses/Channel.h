@@ -1,56 +1,56 @@
 #pragma once
 
 #include "Mutex.h"
+#include <condition_variable>
 #include <memory>
 #include <optional>
 #include <queue>
 
 namespace NCL {
 template <typename T> class Channel {
+  using Lock = std::unique_lock<std::mutex>;
+
 public:
-  Channel() : items(std::shared_ptr<Mutex<std::queue<T>>>()) {}
+  Channel() : inner(std::make_shared<Inner>()) {}
 
   void send(const T &item) {
-    auto items = items.lock();
-    items->push_pack(item);
+    Lock lock(inner->mutex);
+    inner->items.push(item);
+    inner->dataAvailable = true;
+    inner->cv.notify_all();
   }
 
-  template <typename... Args> void emplace(Args &&...args) {
-    auto items = items->lock();
-    items->emplace_back(std::forward<Args>(args)...);
+  void send(T &&item) {
+    Lock lock(inner->mutex);
+    inner->items.push(std::move(item));
+    inner->dataAvailable = true;
+    inner->cv.notify_all();
   }
 
   std::optional<T> receive() {
-    auto items = items->lock();
-    if (items->empty()) {
-      return std::nullopt;
+    Lock lock(inner->mutex);
+    if (!inner->dataAvailable) {
+      inner->cv.wait(lock, [&]() { return inner->dataAvailable; });
     }
-    T item = std::move(items->front());
-    items.erase(items->begin());
+
+    T item = std::move(inner->items.front());
+    inner->items.pop();
+
+    if (inner->items.empty()) {
+      inner->dataAvailable = false;
+    }
+
     return item;
-  }
-
-  std::optional<T> try_receive() {
-    auto lock = items->try_lock();
-    if (!lock)
-      return std::nullopt;
-
-    if (items->empty())
-      return std::nullopt;
-
-    T item = std::move(items->front());
-    items.erase(items->begin());
-    return item;
-  }
-
-  bool has_items() const {
-    auto lock = items->try_lock();
-    if (!lock)
-      return false;
-    return !items->empty();
   }
 
 protected:
-  mutable std::shared_ptr<Mutex<std::queue<T>>> items;
+  struct Inner {
+    std::queue<T> items = {};
+    std::mutex mutex = {};
+    std::condition_variable cv = {};
+    bool dataAvailable = false;
+  };
+
+  std::shared_ptr<Inner> inner;
 };
 } // namespace NCL

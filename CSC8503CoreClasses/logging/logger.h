@@ -10,6 +10,10 @@
 #define NET_LOG_LEVEL SPDLOG_ACTIVE_LEVEL
 #endif
 
+#ifndef AI_LOG_LEVEL
+#define AI_LOG_LEVEL SPDLOG_ACTIVE_LEVEL
+#endif
+
 #if PHYS_LOG_LEVEL <= SPDLOG_LEVEL_TRACE
 #define PHYS_TRACE(...)                                                        \
   NCL::logging::physicsLogger->log(                                            \
@@ -118,7 +122,59 @@
     abort();                                                                   \
   }
 
+#if AI_LOG_LEVEL <= SPDLOG_LEVEL_TRACE
+#define AI_TRACE(...)                                                          \
+  NCL::logging::aiLogger->log(                                                 \
+      spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION},                 \
+      spdlog::level::trace, __VA_ARGS__)
+#else
+#define AI_TRACE(...) (void)0
+#endif
+#if AI_LOG_LEVEL <= SPDLOG_LEVEL_DEBUG
+#define AI_DEBUG(...)                                                          \
+  NCL::logging::aiLogger->log(                                                 \
+      spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION},                 \
+      spdlog::level::debug, __VA_ARGS__)
+
+#else
+#define AI_DEBUG(...) (void)0
+#endif
+#if AI_LOG_LEVEL <= SPDLOG_LEVEL_INFO
+#define AI_INFO(...)                                                           \
+  NCL::logging::aiLogger->log(                                                 \
+      spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION},                 \
+      spdlog::level::info, __VA_ARGS__)
+#else
+#define AI_LOG(...) (void)0
+#endif
+#if AI_LOG_LEVEL <= SPDLOG_LEVEL_WARN
+#define AI_WARN(...)                                                           \
+  NCL::logging::aiLogger->log(                                                 \
+      spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION},                 \
+      spdlog::level::warn, __VA_ARGS__)
+#else
+#define AI_WARN(...) (void)0
+#endif
+#if AI_LOG_LEVEL <= SPDLOG_LEVEL_ERROR
+#define AI_ERROR(...)                                                          \
+  NCL::logging::aiLogger->log(                                                 \
+      spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION},                 \
+      spdlog::level::err, __VA_ARGS__)
+
+#else
+#define AI_ERROR(...) (void)0
+#endif
+#if AI_LOG_LEVEL <= SPDLOG_LEVEL_CRITICAL
+#define AI_CRITICAL(...)                                                       \
+  NCL::logging::aiLogger->log(                                                 \
+      spdlog::source_loc{__FILE__, __LINE__, SPDLOG_FUNCTION},                 \
+      spdlog::level::critical, __VA_ARGS__)
+#else
+#define AI_CRITICAL(...) (void)0
+#endif
+
 namespace NCL::logging {
 extern std::shared_ptr<spdlog::logger> physicsLogger;
 extern std::shared_ptr<spdlog::logger> networkLogger;
+extern std::shared_ptr<spdlog::logger> aiLogger;
 } // namespace NCL::logging

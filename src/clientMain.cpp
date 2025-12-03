@@ -10,6 +10,7 @@
 #include "networking/GameServer.h"
 
 #include "ai/pathfinding/NavigationGrid.h"
+#include "ai/pathfinding/PathfindingService.h"
 
 #include "ClientGame.h"
 
@@ -46,7 +47,7 @@ using namespace CSC8503;
 
 #pragma region Test Functions
 
-#define RUN_TESTS 0
+#define RUN_TESTS 1
 
 namespace {
 void TestStateMachine() {
@@ -79,14 +80,23 @@ void TestStateMachine() {
 
 std::vector<Vector3> testNodes;
 void TestPathfinding() {
+  PathfindingService service;
   NavigationGrid grid("TestGrid1.txt");
-
-  NavigationPath outPath;
+  service.add(std::move(grid));
 
   Vector3 startPos(80, 0, 10);
   Vector3 endPos(80, 0, 80);
 
-  bool found = grid.FindPath(startPos, endPos, outPath);
+  auto futurePath = service.requestPath(startPos, endPos);
+
+  auto res = futurePath.get();
+
+  if (res.is_err()) {
+    ERR("Pathfinding failed with error {}", res.unwrap_err());
+    return;
+  }
+
+  auto outPath = res.unwrap();
 
   Vector3 pos;
   while (outPath.PopWaypoint(pos)) {
