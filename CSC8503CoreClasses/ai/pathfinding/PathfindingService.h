@@ -50,7 +50,7 @@ public:
 
 protected:
   std::thread serverThread;
-  Channel<Request> requests;
+  mpsc::Sender<Request> requests;
 };
 } // namespace NCL::CSC8503
 

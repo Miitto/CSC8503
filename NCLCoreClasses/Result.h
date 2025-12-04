@@ -62,6 +62,13 @@ public:
     return okValue;
   }
 
+  Ok &unwrap_ref() {
+    if (!isOk) {
+      throw std::runtime_error("Called unwrap_ref on an Err Result");
+    }
+    return okValue;
+  }
+
   Err unwrap_err() const {
     if (isOk) {
       throw std::runtime_error("Called unwrap_err on an Ok Result");
