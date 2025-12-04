@@ -75,6 +75,8 @@ protected:
                                 Quaternion orientation,
                                 float inverseMass = 10.0f);
 
+  void AddNavigationGridToWorld(const NavigationGrid &grid);
+
   StateGameObject *AddStateObjectToWorld(const NCL::Maths::Vector3 &position);
 
   Player *AddPlayerToWorld(const NCL::Maths::Vector3 &position);

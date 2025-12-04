@@ -11,8 +11,8 @@ public:
   NavigationMesh(const std::string &filename);
   ~NavigationMesh();
 
-  bool FindPath(const Vector3 &from, const Vector3 &to,
-                NavigationPath &outPath) override;
+  bool FindPath(const Vector3 &from, const Vector3 &to, NavigationPath &outPath,
+                bool center = false) override;
 
   bool containsPoint(const Vector3 &point) const;
 

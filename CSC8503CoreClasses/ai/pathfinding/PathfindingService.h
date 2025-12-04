@@ -23,26 +23,30 @@ public:
   using Result = NCL::Result<NavigationPath, PathfindingError>;
 
   struct ShutdownRequest {};
+  struct ClearRequest {};
 
   struct PathfindingRequest {
 
     Maths::Vector3 startPos;
     Maths::Vector3 endPos;
+    bool center = false;
 
     std::promise<PathfindingService::Result> responsePromise;
   };
 
   using Request = std::variant<PathfindingRequest, ShutdownRequest,
-                               NavigationGrid, NavigationMesh>;
+                               ClearRequest, NavigationGrid, NavigationMesh>;
 
   PathfindingService();
   ~PathfindingService();
 
   void add(NavigationGrid &&grid) { requests.send(std::move(grid)); }
   void add(NavigationMesh &&path) { requests.send(std::move(path)); }
+  void clear() { requests.send(ClearRequest{}); }
 
   std::future<Result> requestPath(const Maths::Vector3 &from,
-                                  const Maths::Vector3 &to);
+                                  const Maths::Vector3 &to,
+                                  bool center = false);
 
 protected:
   std::thread serverThread;

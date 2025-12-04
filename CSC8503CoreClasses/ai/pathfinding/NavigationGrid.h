@@ -28,16 +28,23 @@ struct GridNode {
 class NavigationGrid : public NavigationMap {
 public:
   NavigationGrid() = default;
-  NavigationGrid(const std::string &filename);
+  NavigationGrid(const std::string &filename, const Vector3 origin = {});
   ~NavigationGrid();
 
   NavigationGrid(const NavigationGrid &other) = delete;
   NavigationGrid(NavigationGrid &&other) noexcept;
 
-  bool FindPath(const Vector3 &from, const Vector3 &to,
-                NavigationPath &outPath) override;
+  bool FindPath(const Vector3 &from, const Vector3 &to, NavigationPath &outPath,
+                bool centered = false) override;
 
   bool containsPoint(const Vector3 &point) const;
+
+  int GetWidth() const { return gridWidth; }
+  int GetHeight() const { return gridHeight; }
+  int GetNodeSize() const { return nodeSize; }
+  const Vector3 &GetOrigin() const { return gridOrigin; }
+
+  bool isNodeWalkable(int x, int y) const;
 
 protected:
   bool NodeInList(GridNode *n, std::vector<GridNode *> &list) const;

@@ -14,7 +14,11 @@ const int BOTTOM_NODE = 3;
 const char WALL_NODE = 'x';
 const char FLOOR_NODE = '.';
 
-NavigationGrid::NavigationGrid(const std::string &filename) : NavigationGrid() {
+NavigationGrid::NavigationGrid(const std::string &filename,
+                               const Vector3 origin)
+    : NavigationGrid() {
+  gridOrigin = origin;
+
   std::ifstream infile(Assets::DATADIR + filename);
 
   infile >> nodeSize;
@@ -86,9 +90,11 @@ bool NavigationGrid::containsPoint(const Vector3 &point) const {
           point.z <= zMax);
 }
 
-bool NavigationGrid::FindPath(const Vector3 &from, const Vector3 &to,
-                              NavigationPath &outPath) {
+bool NavigationGrid::FindPath(const Vector3 &fromWorld, const Vector3 &toWorld,
+                              NavigationPath &outPath, bool centered) {
   // need to work out which node 'from' sits in, and 'to' sits in
+  Vector3 from = fromWorld - gridOrigin;
+  Vector3 to = toWorld - gridOrigin;
   int fromX = ((int)from.x / nodeSize);
   int fromZ = ((int)from.z / nodeSize);
 
@@ -124,7 +130,12 @@ bool NavigationGrid::FindPath(const Vector3 &from, const Vector3 &to,
     if (currentBestNode == endNode) { // we've found the path!
       GridNode *node = endNode;
       while (node != nullptr) {
-        outPath.PushWaypoint(node->position);
+        Vector3 pos = node->position + gridOrigin;
+        if (centered) {
+          pos.x += nodeSize / 2.0f;
+          pos.z += nodeSize / 2.0f;
+        }
+        outPath.PushWaypoint(pos);
         node = node->parent;
       }
       return true;
@@ -184,4 +195,12 @@ GridNode *NavigationGrid::RemoveBestNode(std::vector<GridNode *> &list) const {
 
 float NavigationGrid::Heuristic(GridNode *hNode, GridNode *endNode) const {
   return Vector::Length(hNode->position - endNode->position);
+}
+
+bool NavigationGrid::isNodeWalkable(int x, int y) const {
+  if (x < 0 || x >= gridWidth || y < 0 || y >= gridHeight) {
+    return false;
+  }
+  GridNode &n = allNodes[(gridWidth * y) + x];
+  return n.type == FLOOR_NODE;
 }

@@ -66,7 +66,7 @@ bool NavigationMesh::containsPoint(const Vector3 &point) const {
 }
 
 bool NavigationMesh::FindPath(const Vector3 &from, const Vector3 &to,
-                              NavigationPath &outPath) {
+                              NavigationPath &outPath, bool center) {
   const NavTri *start = GetTriForPosition(from);
   const NavTri *end = GetTriForPosition(to);
 

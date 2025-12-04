@@ -26,6 +26,8 @@
 
 #include <imgui/imgui.h>
 
+#include "logging/log.h"
+
 using namespace NCL;
 using namespace CSC8503;
 
@@ -236,6 +238,10 @@ void TutorialGame::InitWorld() {
   AddStateObjectToWorld(Vector3(50, 50, 50));
   pane = AddPaneToWorld(Vector3(0, 10, -20), Vector2(4, 2), .5f);
   pane->SetupConstraints(world);
+
+  NavigationGrid grid("TestGrid1.txt", {50, -16, 50});
+  AddNavigationGridToWorld(grid);
+  world.pathfind().add(std::move(grid));
 
   AddCubeToWorld(Vector3(0, 20, -20), Vector3(2, 2, 2), 0.0f,
                  new Oscillator({{0, 20, -20}, {}}, {{0, 40, -20}, {}}, 10.f));
@@ -525,6 +531,82 @@ Pane *TutorialGame::AddPaneToWorld(const Vector3 &position,
   world.AddGameObject(pane);
   return pane;
 }
+
+void TutorialGame::AddNavigationGridToWorld(const NavigationGrid &grid) {
+  int chunkCount = (grid.GetHeight() / 64) + ((grid.GetHeight() % 64) ? 1 : 0);
+
+  std::vector<std::vector<uint64_t>> chunks;
+
+  for (int chunk = 0; chunk <= grid.GetHeight() / 64; ++chunk) {
+    auto &columns = chunks.emplace_back(grid.GetWidth(), 0);
+    int maxY = std::min(64, grid.GetHeight() - (chunk * 64));
+    for (uint64_t x = 0; x < grid.GetWidth(); ++x) {
+      for (uint64_t y = 0; y < maxY; ++y) {
+        if (!grid.isNodeWalkable(y, x)) {
+          columns[x] |= (1 << y);
+        }
+      }
+    }
+  }
+
+  for (auto &columnData : chunks) {
+    for (auto &data : columnData) {
+      DEBUG("{:b}", data);
+    }
+  }
+
+  for (int chunk = 0; chunk < chunkCount; ++chunk) {
+    auto &columns = chunks[chunk];
+    int maxY = std::min(64, grid.GetHeight() - (chunk * 64));
+    for (int row = 0; row < grid.GetWidth(); ++row) {
+      uint64_t columnData = columns[row];
+      if (columnData == 0)
+        continue;
+
+      int y = 0;
+
+      while (y < maxY) {
+        y += std::countr_zero(columns[row] >> y);
+
+        if (y >= maxY)
+          break;
+
+        int h = std::countr_one(columnData >> y);
+
+        int hMask = h > 63 ? ~0 : (1 << h) - 1;
+        int mask = hMask << y;
+
+        int w = 1;
+
+        while (row + w < grid.GetWidth()) {
+          uint64_t nextColumnData = columns[row + w];
+          uint64_t nextColumn = (nextColumnData >> y) & hMask;
+
+          if (nextColumn != hMask) {
+            break;
+          }
+
+          columns[row + w] &= ~mask;
+
+          w += 1;
+        }
+
+        if (w > 0 && h > 0) {
+          float xPos = grid.GetOrigin().x + row * grid.GetNodeSize();
+          float yPos = grid.GetOrigin().y;
+          float zPos =
+              grid.GetOrigin().z + (chunk * 64 + y) * grid.GetNodeSize();
+          float width = static_cast<float>(w * grid.GetNodeSize()) * .5f;
+          float height = static_cast<float>(h * grid.GetNodeSize()) * .5f;
+          Vector3 pos(zPos + height, yPos + (grid.GetNodeSize() * .5f),
+                      xPos + width);
+          AddCubeToWorld(pos, {height, grid.GetNodeSize() * .5f, width}, 0.f);
+        }
+        y += h;
+      }
+    }
+  }
+}
 #pragma endregion
 
 #pragma region Examples and Tests
@@ -597,10 +679,10 @@ void TutorialGame::BridgeConstraintTest() {
 #pragma endregion
 
 /*
-Every frame, this code will let you perform a raycast, to see if there's an
-object underneath the cursor, and if so 'select it' into a pointer, so that it
-can be manipulated later. Pressing Q will let you toggle between this
-behaviour and instead letting you move the camera around.
+Every frame, this code will let you perform a raycast, to see if there's
+an object underneath the cursor, and if so 'select it' into a pointer, so
+that it can be manipulated later. Pressing Q will let you toggle between
+this behaviour and instead letting you move the camera around.
 
 */
 bool TutorialGame::SelectObject() {
@@ -649,11 +731,11 @@ bool TutorialGame::SelectObject() {
 }
 
 /*
-If an object has been clicked, it can be pushed with the right mouse button,
-by an amount determined by the scroll wheel. In the first tutorial this won't
-do anything, as we haven't added linear motion into our physics system. After
-the second tutorial, objects will move in a straight line - after the third,
-they'll be able to twist under torque aswell.
+If an object has been clicked, it can be pushed with the right mouse
+button, by an amount determined by the scroll wheel. In the first tutorial
+this won't do anything, as we haven't added linear motion into our physics
+system. After the second tutorial, objects will move in a straight line -
+after the third, they'll be able to twist under torque aswell.
 */
 
 void TutorialGame::MoveSelectedObject() {
@@ -697,7 +779,8 @@ void TutorialGame::MoveSelectedObject() {
 }
 
 void TutorialGame::DebugObjectMovement() {
-  // If we've selected an object, we can manipulate it with some key presses
+  // If we've selected an object, we can manipulate it with some key
+  // presses
   if (inSelectionMode && selectionObject) {
     // Twist the selected object!
     if (Window::GetKeyboard()->KeyDown(KeyCodes::LEFT)) {

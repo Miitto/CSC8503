@@ -81,13 +81,13 @@ void TestStateMachine() {
 std::vector<Vector3> testNodes;
 void TestPathfinding() {
   PathfindingService service;
-  NavigationGrid grid("TestGrid1.txt");
+  NavigationGrid grid("TestGrid1.txt", {50, -16, 50});
   service.add(std::move(grid));
 
-  Vector3 startPos(80, 0, 10);
-  Vector3 endPos(80, 0, 80);
+  Vector3 startPos(130, 0, 60);
+  Vector3 endPos(130, 0, 130);
 
-  auto futurePath = service.requestPath(startPos, endPos);
+  auto futurePath = service.requestPath(startPos, endPos, true);
 
   auto res = futurePath.get();
 

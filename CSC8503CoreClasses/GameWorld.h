@@ -1,5 +1,6 @@
 #pragma once
 #include "./Camera.h"
+#include "ai/pathfinding/PathfindingService.h"
 #include "collisions/Ray.h"
 
 namespace NCL {
@@ -89,11 +90,15 @@ public:
 
   Vector3 GetSunColour() const { return sunColour; }
 
+  PathfindingService &pathfind() { return pathfinding; }
+
 protected:
   std::vector<GameObject *> gameObjects;
   std::vector<Constraint *> constraints;
 
   PerspectiveCamera mainCamera;
+
+  PathfindingService pathfinding;
 
   bool shuffleConstraints;
   bool shuffleObjects;

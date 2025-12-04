@@ -28,6 +28,11 @@ public:
                        AI_DEBUG("Shutting down Pathfinding Server");
                        running = false;
                      },
+                     [&](const PathfindingService::ClearRequest &) {
+                       AI_DEBUG("Clearing all navigation data");
+                       grids.clear();
+                       paths.clear();
+                     },
                      [&](NavigationGrid &grid) {
                        addGrid(std::move(grid));
                        AI_DEBUG("Added grid");
@@ -90,7 +95,7 @@ protected:
                const Maths::Vector3 &to,
                PathfindingService::PathfindingRequest &request) {
     NavigationPath path;
-    if (grid.FindPath(from, to, path)) {
+    if (grid.FindPath(from, to, path, request.center)) {
       request.responsePromise.set_value(std::move(path));
     } else {
       request.responsePromise.set_value(PathfindingService::Result::err(
@@ -131,12 +136,13 @@ PathfindingService::~PathfindingService() {
 
 std::future<PathfindingService::Result>
 PathfindingService::requestPath(const Maths::Vector3 &from,
-                                const Maths::Vector3 &to) {
+                                const Maths::Vector3 &to, bool center) {
   std::promise<PathfindingService::Result> promise;
   auto future = promise.get_future();
 
-  AI_DEBUG("Requesting path from {} to {}", from, to);
-  requests.send(PathfindingRequest{from, to, std::move(promise)});
+  AI_DEBUG("Requesting {}path from {} to {}", center ? "centered " : "", from,
+           to);
+  requests.send(PathfindingRequest{from, to, center, std::move(promise)});
 
   return future;
 }
