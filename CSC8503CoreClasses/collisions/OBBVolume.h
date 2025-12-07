@@ -16,6 +16,12 @@ public:
 
   Maths::Vector3 GetHalfDimensions() const { return halfSizes; }
 
+  Maths::Vector3
+  GetBottomPoint(const NCL::CSC8503::Transform &transform) const override {
+    // TODO: Do rotation
+    return transform.GetPosition() - Maths::Vector3(0, halfSizes.y, 0);
+  }
+
 protected:
   Maths::Vector3 halfSizes;
 };

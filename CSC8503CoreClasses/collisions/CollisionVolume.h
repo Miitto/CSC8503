@@ -4,6 +4,7 @@
 #include <string_view>
 
 #include "macros.h"
+#include <Transform.h>
 
 namespace NCL {
 enum class VolumeType {
@@ -22,6 +23,8 @@ public:
   ~CollisionVolume() = default;
 
   virtual float GetMaxExtent() const = 0;
+  virtual Maths::Vector3
+  GetBottomPoint(const NCL::CSC8503::Transform &transform) const = 0;
 
   VolumeType type;
 };

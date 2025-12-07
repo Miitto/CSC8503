@@ -49,6 +49,9 @@ public:
   bool RaycastHitCheck(Ray &r, std::optional<float> maxDist = std::nullopt,
                        const GameObject *const ignore = nullptr) const;
 
+  bool IsOnGround(GameObject *object,
+                  std::optional<float> checkDist = std::nullopt) const;
+
   struct LookingAt {
     GameObject *object;
     RayCollision collision;

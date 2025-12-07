@@ -1,5 +1,6 @@
 #include "Enemy.h"
 #include "logging/log.h"
+#include "physics/PhysicsObject.h"
 
 namespace NCL::CSC8503 {
 Enemy::Enemy(const GameWorld &w, const std::string name, float viewDistance)
@@ -63,7 +64,15 @@ void Enemy::CheckNavRequest() {
 }
 
 bool Enemy::NavigateTo(const Vector3 &targetPos) {
-  // TODO: Implement movement logic
-  return false;
+  Vector3 currentPos = GetTransform().GetPosition();
+
+  Vector3 toTarget = targetPos - currentPos;
+
+  Vector3 moveDir = Vector::Normalise(toTarget);
+
+  GetPhysicsObject()->AddForce(moveDir * speed);
+
+  constexpr float waypointThreshold = 1.0f;
+  return Vector::Dot(toTarget, toTarget) < waypointThreshold;
 }
 } // namespace NCL::CSC8503

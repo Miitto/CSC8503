@@ -177,6 +177,15 @@ bool GameWorld::RaycastHitCheck(Ray &r, std::optional<float> maxDist,
   return false;
 }
 
+bool GameWorld::IsOnGround(GameObject *object,
+                           std::optional<float> checkDist) const {
+  Vector3 rayPos = object->GetTransform().GetPosition();
+  Vector3 rayDir = Vector3(0, -1, 0);
+  Ray r = Ray(rayPos, rayDir);
+  float checkDistance = checkDist.has_value() ? checkDist.value() : 0.1f;
+  return RaycastHitCheck(r, checkDistance, object);
+}
+
 GameWorld::LookingAt
 GameWorld::ObjectLookAt(GameObject *object,
                         std::optional<float> maxDist) const {

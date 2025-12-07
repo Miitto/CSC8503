@@ -14,6 +14,11 @@ public:
 
   float GetRadius() const { return radius; }
 
+  Vector3
+  GetBottomPoint(const NCL::CSC8503::Transform &transform) const override {
+    return transform.GetPosition() - Vector3(0, radius, 0);
+  }
+
 protected:
   float radius;
 };
