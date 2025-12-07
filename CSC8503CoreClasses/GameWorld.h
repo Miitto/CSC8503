@@ -1,5 +1,6 @@
 #pragma once
 #include "./Camera.h"
+#include "IteratorRange.h"
 #include "ai/pathfinding/PathfindingService.h"
 #include "collisions/Ray.h"
 
@@ -26,12 +27,16 @@ public:
   void ClearAndErase();
 
   void AddGameObject(GameObject *o);
+  void AddPlayerObject(GameObject *o, bool addedAsGameObject = false);
   void RemoveGameObject(GameObject *o, bool andDelete = false);
+  void RemovePlayerObject(GameObject *o, bool andDelete = false,
+                          bool removeFromGameObjects = false);
 
   void AddConstraint(Constraint *c);
   void RemoveConstraint(Constraint *c, bool andDelete = false);
 
   PerspectiveCamera &GetMainCamera() { return mainCamera; }
+  const PerspectiveCamera &GetMainCamera() const { return mainCamera; }
 
   void ShuffleConstraints(bool state) { shuffleConstraints = state; }
 
@@ -65,6 +70,20 @@ public:
   GetConstraintIterators(std::vector<Constraint *>::const_iterator &first,
                          std::vector<Constraint *>::const_iterator &last) const;
 
+  IteratorRange<std::vector<GameObject *>::iterator> GetObjectRange() {
+    return IteratorRange(gameObjects.begin(), gameObjects.end());
+  }
+  IteratorRange<std::vector<GameObject *>::const_iterator>
+  GetObjectRange() const {
+    return IteratorRange(gameObjects.cbegin(), gameObjects.cend());
+  }
+  IteratorRange<std::vector<GameObject *>::iterator> GetPlayerRange() {
+    return IteratorRange(players.begin(), players.end());
+  }
+  IteratorRange<std::vector<GameObject *>::const_iterator>
+  GetPlayerRange() const {
+    return IteratorRange(players.cbegin(), players.cend());
+  }
   std::vector<GameObject *>::iterator begin() { return gameObjects.begin(); }
   std::vector<GameObject *>::iterator end() { return gameObjects.end(); }
   std::vector<GameObject *>::const_iterator begin() const noexcept {
@@ -78,6 +97,21 @@ public:
   }
   std::vector<GameObject *>::const_iterator cend() const noexcept {
     return gameObjects.cend();
+  }
+
+  std::vector<GameObject *>::iterator playerBegin() { return players.begin(); }
+  std::vector<GameObject *>::iterator playerEnd() { return players.end(); }
+  std::vector<GameObject *>::const_iterator playerBegin() const noexcept {
+    return players.begin();
+  }
+  std::vector<GameObject *>::const_iterator playerEnd() const noexcept {
+    return players.end();
+  }
+  std::vector<GameObject *>::const_iterator playerCbegin() const noexcept {
+    return players.cbegin();
+  }
+  std::vector<GameObject *>::const_iterator playerCend() const noexcept {
+    return players.cend();
   }
 
   int GetWorldStateID() const { return worldStateCounter; }
@@ -94,6 +128,7 @@ public:
 
 protected:
   std::vector<GameObject *> gameObjects;
+  std::vector<GameObject *> players;
   std::vector<Constraint *> constraints;
 
   PerspectiveCamera mainCamera;

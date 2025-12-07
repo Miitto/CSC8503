@@ -12,12 +12,14 @@ set(Header_Files
     "Oscillator.h"
     "Pane.h"
     "Player.h"
+    "Enemy.h"
     "StateGameObject.h"
     "TutorialGame.h"
 )
 source_group("Header Files" FILES ${Header_Files})
 
 set(Source_Files
+    "Enemy.cpp"
     "logging/logger.cpp"
     "GameTechRenderer.cpp"
     "GameTechRendererInterface.cpp"

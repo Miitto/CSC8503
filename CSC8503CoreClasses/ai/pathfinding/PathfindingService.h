@@ -26,7 +26,6 @@ public:
   struct ClearRequest {};
 
   struct PathfindingRequest {
-
     Maths::Vector3 startPos;
     Maths::Vector3 endPos;
     bool center = false;
@@ -34,8 +33,9 @@ public:
     std::promise<PathfindingService::Result> responsePromise;
   };
 
-  using Request = std::variant<PathfindingRequest, ShutdownRequest,
-                               ClearRequest, NavigationGrid, NavigationMesh>;
+  using ServerRequest =
+      std::variant<PathfindingRequest, ShutdownRequest, ClearRequest,
+                   NavigationGrid, NavigationMesh>;
 
   PathfindingService();
   ~PathfindingService();
@@ -44,13 +44,14 @@ public:
   void add(NavigationMesh &&path) { requests.send(std::move(path)); }
   void clear() { requests.send(ClearRequest{}); }
 
-  std::future<Result> requestPath(const Maths::Vector3 &from,
-                                  const Maths::Vector3 &to,
-                                  bool center = false);
+  using Request = std::future<Result>;
+
+  Request requestPath(const Maths::Vector3 &from, const Maths::Vector3 &to,
+                      bool center = false);
 
 protected:
   std::thread serverThread;
-  mpsc::Sender<Request> requests;
+  mpsc::Sender<ServerRequest> requests;
 };
 } // namespace NCL::CSC8503
 

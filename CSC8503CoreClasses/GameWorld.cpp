@@ -45,6 +45,12 @@ void GameWorld::AddGameObject(GameObject *o) {
   worldStateCounter++;
 }
 
+void GameWorld::AddPlayerObject(GameObject *o, bool addToGameList) {
+  players.emplace_back(o);
+  if (addToGameList)
+    AddGameObject(o);
+}
+
 void GameWorld::RemoveGameObject(GameObject *o, bool andDelete) {
   gameObjects.erase(std::remove(gameObjects.begin(), gameObjects.end(), o),
                     gameObjects.end());
@@ -52,6 +58,18 @@ void GameWorld::RemoveGameObject(GameObject *o, bool andDelete) {
     delete o;
   }
   worldStateCounter++;
+}
+
+void GameWorld::RemovePlayerObject(GameObject *o, bool andDelete,
+                                   bool removeFromGameObjects) {
+  players.erase(std::remove(players.begin(), players.end(), o), players.end());
+  if (removeFromGameObjects) {
+    RemoveGameObject(o, andDelete);
+  } else {
+    if (andDelete)
+      delete o;
+    worldStateCounter++;
+  }
 }
 
 void GameWorld::GetObjectIterators(GameObjectIterator &first,
@@ -92,11 +110,26 @@ bool GameWorld::Raycast(Ray &r, RayCollision &collision,
     return true;
   };
 
+  Vector3 rayPos = r.GetPosition();
+  float maxDistSq = maxDist.has_value() ? maxDist.value() * maxDist.value()
+                                        : std::numeric_limits<float>::max();
+
   for (auto &i : gameObjects) {
     if (!i->GetBoundingVolume()) { // objects might not be collideable etc...
       continue;
     }
     if (i == ignoreThis) {
+      continue;
+    }
+
+    // Distance pre check
+    Vector3 objPos = i->GetTransform().GetPosition();
+    Vector3 rel = objPos - rayPos;
+    float maxExtent = i->GetBoundingVolume()->GetMaxExtent();
+    float distSqToObj =
+        Vector::Dot(rel, rel) +
+        (maxExtent * maxExtent); // Take into account max extent.
+    if (distSqToObj > maxDistSq) {
       continue;
     }
 

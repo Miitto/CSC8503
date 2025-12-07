@@ -7,7 +7,7 @@ namespace NCL::CSC8503 {
 
 class PathfindingServer {
 public:
-  PathfindingServer(mpsc::Receiver<PathfindingService::Request> &&channel)
+  PathfindingServer(mpsc::Receiver<PathfindingService::ServerRequest> &&channel)
       : requests(std::move(channel)) {
     AI_DEBUG("Starting Pathfinding Server");
   }
@@ -25,7 +25,7 @@ public:
 
       auto &req = reqRes.unwrap_ref();
 
-      AI_DEBUG("Pathfinding Server Received Request");
+      AI_DEBUG("Pathfinding Server Received ServerRequest");
       std::visit(NCL::overloaded{
                      [&](const PathfindingService::ShutdownRequest &) {
                        AI_DEBUG("Shutting down Pathfinding Server");
@@ -118,13 +118,13 @@ protected:
     }
   }
 
-  mpsc::Receiver<PathfindingService::Request> requests;
+  mpsc::Receiver<PathfindingService::ServerRequest> requests;
   std::vector<NavigationGrid> grids;
   std::vector<NavigationMesh> paths;
 };
 
 PathfindingService::PathfindingService() {
-  auto [sender, receiver] = mpsc::create<PathfindingService::Request>();
+  auto [sender, receiver] = mpsc::create<PathfindingService::ServerRequest>();
   requests = sender;
 
   serverThread = std::thread([r = std::move(receiver)]() mutable {

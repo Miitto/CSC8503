@@ -460,7 +460,7 @@ Player *TutorialGame::AddPlayerToWorld(const Vector3 &position) {
   character->GetPhysicsObject()->GetMaxLinearVelocity() = 20.f;
   character->GetPhysicsObject()->GetMaxAngularVelocity() = 10.f;
 
-  world.AddGameObject(character);
+  world.AddPlayerObject(character);
 
   return character;
 }

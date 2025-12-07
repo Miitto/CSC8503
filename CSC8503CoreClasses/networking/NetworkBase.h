@@ -6,6 +6,8 @@ struct _ENetEvent;
 
 #include <spdlog/fmt/bundled/format.h>
 
+#include "IteratorRange.h"
+
 enum BasicNetworkMessages : uint16_t {
   /// @brief Packet sent client->server when first connecting
   Hello,
@@ -162,15 +164,7 @@ protected:
   typedef std::multimap<GamePacketType, PacketReceiver *>::const_iterator
       PacketHandlerIterator;
 
-  struct IteratorRange {
-    PacketHandlerIterator first;
-    PacketHandlerIterator last;
-
-    PacketHandlerIterator begin() const { return first; }
-    PacketHandlerIterator end() const { return last; }
-  };
-
-  std::optional<std::pair<PacketHandlerIterator, PacketHandlerIterator>>
+  std::optional<NCL::IteratorRange<PacketHandlerIterator>>
   GetPacketHandlers(int msgID) const {
     auto range = packetHandlers.equal_range(msgID);
 
@@ -178,7 +172,7 @@ protected:
       return std::nullopt; // no handlers for this message type!
     }
 
-    return range;
+    return NCL::IteratorRange(range.first, range.second);
   }
 
   _ENetHost *netHandle = nullptr;
