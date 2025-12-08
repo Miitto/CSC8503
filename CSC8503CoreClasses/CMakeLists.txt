@@ -101,6 +101,7 @@ set(Header_Files
     "Debug.h"
     "GameObject.h"
     "GameWorld.h"
+    "GamePlayer.h"
     "RenderObject.h"
     "Transform.h"
 )
@@ -110,6 +111,7 @@ set(Source_Files
     "Debug.cpp"
     "GameObject.cpp"
     "GameWorld.cpp"
+    "GamePlayer.cpp"
     "RenderObject.cpp"
     "Transform.cpp"
 )

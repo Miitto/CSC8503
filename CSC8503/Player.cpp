@@ -1,17 +1,18 @@
 #include "Player.h"
 
-#include "Window.h"
+#include "Bitflag.h"
 #include "physics/PhysicsObject.h"
 
 namespace NCL::CSC8503 {
-Player::Player(Camera &inCamera) : camera(inCamera) {}
 
 void Player::Update(float dt) {
   auto pos = GetTransform().GetPosition();
   camera.SetPosition(pos + Vector3(0, 5, 0));
   auto rot = Quaternion::EulerAnglesToQuaternion(0, camera.GetYaw(), 0);
   GetTransform().SetOrientation(rot);
+}
 
+void Player::Input(float dt, ClientPacket input) {
   constexpr Vector3 UP{0, 1, 0};
   constexpr Vector3 RIGHT{1, 0, 0};
   constexpr Vector3 FORWARD{0, 0, -1};
@@ -23,17 +24,28 @@ void Player::Update(float dt) {
 
   auto &phys = *GetPhysicsObject();
 
-  if (Window::GetKeyboard()->KeyDown(KeyCodes::W)) {
+  Bitflag<Actions> flags(input.actions);
+
+  if (flags.has(Actions::Jump) && world->IsOnGround(this)) {
     phys.AddForce(forward * 50.0f);
   }
-  if (Window::GetKeyboard()->KeyDown(KeyCodes::S)) {
-    phys.AddForce(-forward * 50.0f);
-  }
-  if (Window::GetKeyboard()->KeyDown(KeyCodes::A)) {
-    phys.AddForce(-right * 50.0f);
-  }
-  if (Window::GetKeyboard()->KeyDown(KeyCodes::D)) {
-    phys.AddForce(right * 50.0f);
+
+  if (pane) {
+    if (flags.has(Actions::AttachFrontLeftCorner)) {
+      pane->AttachCorner(Pane::Corner::FrontLeft);
+    }
+
+    if (flags.has(Actions::AttachFrontRightCorner)) {
+      pane->AttachCorner(Pane::Corner::FrontRight);
+    }
+
+    if (flags.has(Actions::AttachBackLeftCorner)) {
+      pane->AttachCorner(Pane::Corner::BackLeft);
+    }
+
+    if (flags.has(Actions::AttachBackRightCorner)) {
+      pane->AttachCorner(Pane::Corner::BackRight);
+    }
   }
 }
 } // namespace NCL::CSC8503

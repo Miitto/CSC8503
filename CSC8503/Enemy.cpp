@@ -1,6 +1,9 @@
 #include "Enemy.h"
+#include "Player.h"
 #include "logging/log.h"
 #include "physics/PhysicsObject.h"
+
+#include "ai/behaviour_trees/BehaviourAction.h"
 
 namespace NCL::CSC8503 {
 Enemy::Enemy(const GameWorld &w, const std::string name, float viewDistance)
@@ -10,24 +13,30 @@ Enemy::Enemy(const GameWorld &w, const std::string name, float viewDistance)
 }
 
 void Enemy::InitializeBehaviours() {
-  auto canSeePlayer = [this](float dt) {
+  auto canSeePlayer = [this]() {
     float distance = std::numeric_limits<float>::infinity();
-    std::optional<Vector3> goal = std::nullopt;
+    std::optional<const NCL::CSC8503::Player *> goal = std::nullopt;
 
     Vector3 pos = GetTransform().GetPosition();
 
     for (auto &player : world.GetPlayerRange()) {
-      Vector3 pPos = player->GetTransform().GetPosition();
+      Vector3 pPos = player.second->GetTransform().GetPosition();
 
-      Vector3 dir = (pPos - pos);
+      Vector3 dir = Vector::Normalise(pPos - pos);
 
-      Ray ray(pos, Vector::Normalise(dir));
+      if (Vector::Dot(dir, GetTransform().GetOrientation() * Vector3(0, 0, 1)) <
+          cosf(Maths::DegreesToRadians(viewAngle))) {
+        continue;
+      }
+
+      Ray ray(pos, dir);
       RayCollision hit;
       if (world.Raycast(ray, hit, viewDistance, this)) {
-        if (hit.node == player) {
+        if (hit.node == player.second) {
           if (distance < hit.rayDistance) {
             distance = hit.rayDistance;
-            goal = pPos;
+            goal = reinterpret_cast<const NCL::CSC8503::Player *const>(
+                player.second);
           }
         }
       }
@@ -35,17 +44,27 @@ void Enemy::InitializeBehaviours() {
 
     return goal;
   };
+
+  std::shared_ptr gotoNextWaypoint = std::make_shared<BehaviourAction>(
+      "GotoNextWaypoint", [this, canSeePlayer](float dt, BehaviourState state) {
+        if (!nav.has_value()) {
+          return BehaviourState::Failure;
+        }
+        if (NavigateTo(nav->waypoint)) {
+          if (!nav->next()) {
+            nav.reset();
+            return BehaviourState::Success;
+          }
+        }
+        return BehaviourState::Ongoing;
+      });
+
+  rootBehaviour.AddChild(gotoNextWaypoint);
 }
 
 void Enemy::Update(float dt) {
   rootBehaviour.Execute(dt);
   CheckNavRequest();
-
-  if (nav.has_value() && NavigateTo(nav->waypoint)) {
-    if (!nav->next()) {
-      nav.reset();
-    }
-  }
 }
 
 void Enemy::CheckNavRequest() {

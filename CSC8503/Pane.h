@@ -2,84 +2,54 @@
 
 #include "GameObject.h"
 #include "GameWorld.h"
-#include "Window.h"
-#include "collisions/CollisionDetection.h"
 #include "constraints/OffsetTiedConstraint.h"
-#include "gui.h"
 
 class Pane : public NCL::CSC8503::GameObject {
 public:
+  enum class Corner { FrontLeft, FrontRight, BackLeft, BackRight };
   Pane(NCL::CSC8503::GameWorld *world, GameObject *player)
       : GameObject("Pane"), world(world), player(player) {}
 
-  void Update(float dt) override {
-    if (NCL::Window::GetKeyboard()->KeyPressed(NCL::KeyCodes::C)) {
-      NextCorner();
-    }
+  void AttachCorner(Corner currentCorner) {
+    auto &cam = world->GetMainCamera();
+    Quaternion camRot =
+        Quaternion::EulerAnglesToQuaternion(cam.GetPitch(), cam.GetYaw(), 0.f);
+    auto forward = camRot * NCL::Maths::Vector3(0, 0, -1);
+    Ray ray(cam.GetPosition(), forward);
 
-    {
-      auto frame = NCL::gui::Frame("Pane Controls");
+    RayCollision closestCollision;
+    if (world->Raycast(ray, closestCollision, std::nullopt, player)) {
+      auto node =
+          static_cast<NCL::CSC8503::GameObject *>(closestCollision.node);
+      auto offset =
+          closestCollision.collidedAt - node->GetTransform().GetPosition();
 
-      constexpr const char *cornerNames[] = {
-          "None", "Front Left", "Front Right", "Back Left", "Back Right",
-      };
-
-      if (ImGui::BeginCombo("Current Corner",
-                            cornerNames[static_cast<int>(currentCorner)])) {
-        for (int i = 0; i <= BackRight; ++i) {
-          bool isSelected = (currentCorner == static_cast<Corner>(i));
-          if (ImGui::Selectable(cornerNames[i], isSelected)) {
-            currentCorner = static_cast<Corner>(i);
-          }
-        }
-        ImGui::EndCombo();
+      NCL::CSC8503::OffsetTiedConstraint *toActivate = nullptr;
+      switch (currentCorner) {
+      case Corner::FrontLeft:
+        toActivate = constraints.fl;
+        break;
+      case Corner::FrontRight:
+        toActivate = constraints.fr;
+        break;
+      case Corner::BackLeft:
+        toActivate = constraints.bl;
+        break;
+      case Corner::BackRight:
+        toActivate = constraints.br;
+        break;
       }
-    }
 
-    if (NCL::Window::GetMouse()->ButtonDown(NCL::MouseButtons::Left)) {
-      auto &cam = world->GetMainCamera();
-      Quaternion camRot = Quaternion::EulerAnglesToQuaternion(
-          cam.GetPitch(), cam.GetYaw(), 0.f);
-      auto forward = camRot * NCL::Maths::Vector3(0, 0, -1);
-      Ray ray(cam.GetPosition(), forward);
+      NCL::Maths::Vector3 pos =
+          GetTransform().GetPosition() +
+          (GetTransform().GetOrientation() * GetCornerOffset(currentCorner));
 
-      RayCollision closestCollision;
-      if (currentCorner != None &&
-          world->Raycast(ray, closestCollision, std::nullopt, player)) {
-        auto node =
-            static_cast<NCL::CSC8503::GameObject *>(closestCollision.node);
-        auto offset =
-            closestCollision.collidedAt - node->GetTransform().GetPosition();
+      auto rel = pos - closestCollision.collidedAt;
+      auto dist = NCL::Maths::Vector::Length(rel);
 
-        NCL::CSC8503::OffsetTiedConstraint *toActivate = nullptr;
-        switch (currentCorner) {
-        case FrontLeft:
-          toActivate = constraints.fl;
-          break;
-        case FrontRight:
-          toActivate = constraints.fr;
-          break;
-        case BackLeft:
-          toActivate = constraints.bl;
-          break;
-        case BackRight:
-          toActivate = constraints.br;
-          break;
-        case None:
-          break; // NOOP, unreachable
-        }
-
-        NCL::Maths::Vector3 pos =
-            GetTransform().GetPosition() +
-            (GetTransform().GetOrientation() * GetCornerOffset(currentCorner));
-
-        auto rel = pos - closestCollision.collidedAt;
-        auto dist = NCL::Maths::Vector::Length(rel);
-
-        toActivate->SetObjB({node, offset});
-        toActivate->SetDistance(dist);
-        toActivate->activate();
-      }
+      toActivate->SetObjB({node, offset});
+      toActivate->SetDistance(dist);
+      toActivate->activate();
     }
   }
 
@@ -126,32 +96,17 @@ protected:
 
   Constraints constraints;
 
-  enum Corner { None = 0, FrontLeft, FrontRight, BackLeft, BackRight };
-
   NCL::Maths::Vector3 GetCornerOffset(Corner corner) {
     auto scale = GetTransform().GetScale();
     switch (corner) {
-    case FrontLeft:
+    case Corner::FrontLeft:
       return NCL::Maths::Vector3(-scale.x / 2, 0.0f, -scale.z / 2);
-    case FrontRight:
+    case Corner::FrontRight:
       return NCL::Maths::Vector3(scale.x / 2, 0.0f, -scale.z / 2);
-    case BackLeft:
+    case Corner::BackLeft:
       return NCL::Maths::Vector3(-scale.x / 2, 0.0f, scale.z / 2);
-    case BackRight:
+    case Corner::BackRight:
       return NCL::Maths::Vector3(scale.x / 2, 0.0f, scale.z / 2);
-    case None:
-    default:
-      return NCL::Maths::Vector3(0.0f, 0.0f, 0.0f);
     }
-  }
-
-  Corner currentCorner = None;
-  void NextCorner() {
-    auto next = currentCorner + 1;
-    if (next > BackRight) {
-      next = None;
-    }
-
-    currentCorner = static_cast<Corner>(next);
   }
 };

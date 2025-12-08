@@ -5,13 +5,9 @@ class BehaviourNodeWithChildren : public BehaviourNode {
 public:
   BehaviourNodeWithChildren(const std::string &nodeName)
       : BehaviourNode(nodeName) {};
-  ~BehaviourNodeWithChildren() {
-    for (auto &i : childNodes) {
-      delete i;
-    }
-  }
-  BehaviourNodeWithChildren &AddChild(BehaviourNode *n) {
-    childNodes.emplace_back(n);
+
+  BehaviourNodeWithChildren &AddChild(std::shared_ptr<BehaviourNode> n) {
+    childNodes.emplace_back(std::move(n));
     return *this;
   }
 
@@ -23,5 +19,5 @@ public:
   }
 
 protected:
-  std::vector<BehaviourNode *> childNodes;
+  std::vector<std::shared_ptr<BehaviourNode>> childNodes;
 };

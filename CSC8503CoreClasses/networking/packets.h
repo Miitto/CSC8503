@@ -1,9 +1,18 @@
 #pragma once
 
+#include "logging/logger.h"
 #include "networking/NetworkBase.h"
 #include "networking/NetworkState.h"
 
 namespace NCL::CSC8503 {
+
+struct HelloPacket : public GamePacket {
+  int id = -1;
+  HelloPacket(int id)
+      : GamePacket(BasicNetworkMessages::Hello,
+                   sizeof(HelloPacket) - sizeof(GamePacket)),
+        id(id) {}
+};
 
 struct PlayerConnectedPacket : public GamePacket {
   int id = -1;
@@ -45,7 +54,9 @@ struct DeltaPacket : public GamePacket {
 
 struct ClientPacket : public GamePacket {
   int lastID = 0;
-  char buttonstates[8] = {};
+  uint64_t actions = 0;
+  int8_t posDelta[3] = {0, 0, 0};
+  int8_t rotDelta[3] = {0, 0, 0};
 
   ClientPacket()
       : GamePacket(BasicNetworkMessages::PlayerState,

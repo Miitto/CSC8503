@@ -20,7 +20,7 @@ GameServer::GameServer(uint16_t onPort, int maxClients) {
 GameServer::~GameServer() { Shutdown(); }
 
 void GameServer::Shutdown() {
-  SendGlobalPacket(BasicNetworkMessages::Shutdown);
+  SendGlobalPacket(GamePacket(BasicNetworkMessages::Shutdown));
   enet_host_destroy(netHandle);
   netHandle = nullptr;
   NET_INFO("Server shutdown on port {}", port);
@@ -54,12 +54,6 @@ ENetPeer *GameServer::GetPeer(int id) {
   return nullptr;
 }
 
-bool GameServer::SendPacketToClient(int clientID, GamePacketType type) {
-  GamePacket packet;
-  packet.type = type;
-  return SendPacketToClient(clientID, packet);
-}
-
 bool GameServer::SendPacketToClient(int clientID, GamePacket &packet) {
   ENetPacket *enetPacket =
       enet_packet_create(&packet, packet.GetTotalSize(), 0);
@@ -77,12 +71,6 @@ bool GameServer::SendPacketToClient(int clientID, GamePacket &packet) {
 
 bool GameServer::SendPacketToClient(int clientID, GamePacket &&packet) {
   return SendPacketToClient(clientID, static_cast<GamePacket &>(packet));
-}
-
-bool GameServer::SendGlobalPacket(GamePacketType type) {
-  GamePacket packet;
-  packet.type = type;
-  return SendGlobalPacket(packet);
 }
 
 bool GameServer::SendGlobalPacket(GamePacket &packet) {

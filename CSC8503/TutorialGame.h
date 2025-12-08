@@ -30,6 +30,8 @@ public:
   void InitWorld();
   void InitCollisionTest();
 
+  Player *SpawnPlayer(int id);
+
   void SetActive(bool state) { active = state; }
   void SetCameraActive(bool state) { updateCamera = state; }
   void SetShowUi(bool state) { showUi = state; }
@@ -79,7 +81,7 @@ protected:
 
   StateGameObject *AddStateObjectToWorld(const NCL::Maths::Vector3 &position);
 
-  Player *AddPlayerToWorld(const NCL::Maths::Vector3 &position);
+  Player *AddPlayerToWorld(const NCL::Maths::Vector3 &position, int id);
   GameObject *AddEnemyToWorld(const NCL::Maths::Vector3 &position);
   GameObject *AddBonusToWorld(const NCL::Maths::Vector3 &position);
 

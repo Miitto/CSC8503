@@ -1,6 +1,7 @@
 #include "GameWorld.h"
 #include "Camera.h"
 #include "GameObject.h"
+#include "GamePlayer.h"
 #include "collisions/CollisionDetection.h"
 #include "constraints/Constraint.h"
 
@@ -45,10 +46,9 @@ void GameWorld::AddGameObject(GameObject *o) {
   worldStateCounter++;
 }
 
-void GameWorld::AddPlayerObject(GameObject *o, bool addToGameList) {
-  players.emplace_back(o);
-  if (addToGameList)
-    AddGameObject(o);
+void GameWorld::AddPlayerObject(GamePlayer *o) {
+  players.emplace(o->GetId(), o);
+  AddGameObject(o);
 }
 
 void GameWorld::RemoveGameObject(GameObject *o, bool andDelete) {
@@ -60,16 +60,9 @@ void GameWorld::RemoveGameObject(GameObject *o, bool andDelete) {
   worldStateCounter++;
 }
 
-void GameWorld::RemovePlayerObject(GameObject *o, bool andDelete,
-                                   bool removeFromGameObjects) {
-  players.erase(std::remove(players.begin(), players.end(), o), players.end());
-  if (removeFromGameObjects) {
-    RemoveGameObject(o, andDelete);
-  } else {
-    if (andDelete)
-      delete o;
-    worldStateCounter++;
-  }
+void GameWorld::RemovePlayerObject(GamePlayer *o, bool andDelete) {
+  players.erase(o->GetId());
+  RemoveGameObject(o, andDelete);
 }
 
 void GameWorld::GetObjectIterators(GameObjectIterator &first,

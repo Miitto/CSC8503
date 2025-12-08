@@ -48,7 +48,7 @@ void ClientGame::SetupPacketHandlers() {
 
 void ClientGame::Disconnect() {
   if (net) {
-    net->SendPacket(BasicNetworkMessages::Shutdown);
+    net->SendPacket(GamePacket(BasicNetworkMessages::Shutdown));
     net->UpdateClient(); // Need to run an update to send the packet
     net = std::nullopt;
   }
@@ -70,11 +70,12 @@ void ClientGame::NetworkUpdate(float dt) {
 
   ClientPacket newPacket;
 
+  Player::ActionFlags a;
   if (Window::GetKeyboard()->KeyPressed(KeyCodes::SPACE)) {
-    // fire button pressed!
-    newPacket.buttonstates[0] = 1;
-    newPacket.lastID = lastFullSync;
+    a.set(Player::Actions::Jump);
   }
+
+  newPacket.actions = a.flags;
   net->SendPacket(newPacket);
 }
 
@@ -86,7 +87,7 @@ void ClientGame::PingCheck(float dt) {
 
     if (pingInfo->timeSinceLastPing >= PING_TIMEOUT) {
       if (pingInfo->attemptsLeft > 0) {
-        net->SendPacket(pingInfo->messageType);
+        net->SendPacket(*pingInfo->packet);
         pingInfo->lastPingSentTime = std::chrono::high_resolution_clock::now();
         pingInfo->timeSinceLastPing = 0.0f;
         pingInfo->attemptsLeft--;
@@ -128,6 +129,13 @@ void ClientGame::StartLevel(Level level) {
     return;
   }
 
+  player = SpawnPlayer(ourPlayerId);
+  for (auto id : connectedPlayers) {
+    if (id != ourPlayerId) {
+      SpawnPlayer(id);
+    }
+  }
+
   if (serverNet) {
     serverNet->OnLevelUpdate(level);
   }
@@ -162,7 +170,7 @@ void ClientGame::ReceivePacket(GamePacketType type, GamePacket *payload,
   }
   case BasicNetworkMessages::Ping_Response: {
     NET_DEBUG("Received ping response from server.");
-    if (pingInfo && pingInfo->messageType == BasicNetworkMessages::Ping) {
+    if (pingInfo && pingInfo->packet->type == BasicNetworkMessages::Ping) {
       pingInfo->cb(ConnectionFailure::None);
       pingInfo = std::nullopt;
     }
@@ -184,7 +192,9 @@ void ClientGame::ReceivePacket(GamePacketType type, GamePacket *payload,
   }
   case BasicNetworkMessages::Hello: {
     NET_DEBUG("Received hello from server.");
-    if (pingInfo && pingInfo->messageType == BasicNetworkMessages::Hello) {
+    auto helloPacket = GamePacket::as<HelloPacket>(payload);
+    ourPlayerId = helloPacket->id;
+    if (pingInfo && pingInfo->packet->type == BasicNetworkMessages::Hello) {
       pingInfo->cb(ConnectionFailure::None);
       pingInfo = std::nullopt;
     }

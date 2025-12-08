@@ -51,7 +51,7 @@ void ServerCore::ReceivePacket(GamePacketType type, GamePacket *payload,
                                  .clientID = source,
                                  .lastReceivedStateID = -1});
     net.SendGlobalPacket(PlayerConnectedPacket(source));
-    net.SendPacketToClient(source, BasicNetworkMessages::Hello);
+    net.SendPacketToClient(source, HelloPacket(source));
     net.SendPacketToClient(
         source, LevelChangePacket(static_cast<uint8_t>(currentLevel)));
     break;

@@ -117,7 +117,7 @@ void TestBehaviourTree() {
   float timer = 0.0f;
   float distatnceToTarget;
 
-  BehaviourAction *findKey = new BehaviourAction(
+  std::shared_ptr findKey = std::make_unique<BehaviourAction>(
       "Find Key", [&](float dt, BehaviourState state) -> BehaviourState {
         if (state == BehaviourState::Initialise) {
           std::cout << "Finding Key..." << std::endl;
@@ -133,7 +133,7 @@ void TestBehaviourTree() {
         return state;
       });
 
-  BehaviourAction *goToRoom = new BehaviourAction(
+  std::shared_ptr goToRoom = std::make_unique<BehaviourAction>(
       "Go To Room", [&](float dt, BehaviourState state) -> BehaviourState {
         if (state == BehaviourState::Initialise) {
           std::cout << "Going to Room..." << std::endl;
@@ -148,7 +148,7 @@ void TestBehaviourTree() {
         return state;
       });
 
-  BehaviourAction *openDoor = new BehaviourAction(
+  std::shared_ptr openDoor = std::make_unique<BehaviourAction>(
       "Open Door", [&](float dt, BehaviourState state) -> BehaviourState {
         if (state == BehaviourState::Initialise) {
           std::cout << "Opening Door..." << std::endl;
@@ -157,7 +157,7 @@ void TestBehaviourTree() {
         return state;
       });
 
-  BehaviourAction *lookForTreasure = new BehaviourAction(
+  std::shared_ptr lookForTreasure = std::make_unique<BehaviourAction>(
       "Look For Treasure",
       [&](float dt, BehaviourState state) -> BehaviourState {
         if (state == BehaviourState::Initialise) {
@@ -176,7 +176,7 @@ void TestBehaviourTree() {
         return state;
       });
 
-  BehaviourAction *lookForItems = new BehaviourAction(
+  std::shared_ptr lookForItems = std::make_unique<BehaviourAction>(
       "Look For Items", [&](float dt, BehaviourState state) -> BehaviourState {
         if (state == BehaviourState::Initialise) {
           std::cout << "Looking for Items..." << std::endl;
@@ -194,10 +194,12 @@ void TestBehaviourTree() {
         return state;
       });
 
-  BehaviourSequence *sequence = new BehaviourSequence("Room Sequence");
+  std::shared_ptr sequence =
+      std::make_unique<BehaviourSequence>("Room Sequence");
   sequence->AddChild(findKey).AddChild(goToRoom).AddChild(openDoor);
 
-  BehaviourSelector *selector = new BehaviourSelector("Loot Selection");
+  std::shared_ptr selector =
+      std::make_unique<BehaviourSelector>("Loot Selection");
   selector->AddChild(lookForTreasure).AddChild(lookForItems);
 
   BehaviourSequence *root = new BehaviourSequence("Root Sequence");

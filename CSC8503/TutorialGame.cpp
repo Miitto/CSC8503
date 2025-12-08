@@ -88,60 +88,9 @@ void TutorialGame::UpdateGame(float dt) {
     world.GetMainCamera().UpdateCamera(dt);
   }
 
-  if (Window::GetKeyboard()->KeyPressed(KeyCodes::F1)) {
-    InitWorld(); // We can reset the simulation at any time with F1
-    selectionObject = nullptr;
-  }
-
-  if (Window::GetKeyboard()->KeyPressed(KeyCodes::F2)) {
-    InitCamera(); // F2 will reset the camera to a specific default place
-  }
-
-  if (Window::GetKeyboard()->KeyPressed(KeyCodes::G)) {
-    useGravity = !useGravity; // Toggle gravity!
-    physics.UseGravity(useGravity);
-  }
-  // Running certain physics updates in a consistent order might cause some
-  // bias in the calculations - the same objects might keep 'winning' the
-  // constraint allowing the other one to stretch too much etc. Shuffling the
-  // order so that it is random every frame can help reduce such bias.
-  if (Window::GetKeyboard()->KeyPressed(KeyCodes::F9)) {
-    world.ShuffleConstraints(true);
-  }
-  if (Window::GetKeyboard()->KeyPressed(KeyCodes::F10)) {
-    world.ShuffleConstraints(false);
-  }
-
-  if (Window::GetKeyboard()->KeyPressed(KeyCodes::F7)) {
-    world.ShuffleObjects(true);
-  }
-  if (Window::GetKeyboard()->KeyPressed(KeyCodes::F8)) {
-    world.ShuffleObjects(false);
-  }
-
-  DebugObjectMovement();
-
-  if (Window::GetKeyboard()->KeyPressed(KeyCodes::K) && selectionObject) {
-    auto obj = world.ObjectLookAt(selectionObject);
-    if (obj) {
-      if (objClosest) {
-        objClosest->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
-      }
-      objClosest = obj.object;
-
-      objClosest->GetRenderObject()->SetColour(Vector4(1, 0, 1, 1));
-    }
-  }
-
   // This year we can draw debug textures as well!
   Debug::DrawTex(*defaultTex, Vector2(10, 10), Vector2(5, 5), Debug::WHITE);
   Debug::DrawLine(Vector3(), Vector3(0, 100, 0), Vector4(1, 0, 0, 1));
-
-  if (useGravity) {
-    Debug::Print("(G)ravity on", Vector2(5, 95), Debug::RED);
-  } else {
-    Debug::Print("(G)ravity off", Vector2(5, 95), Debug::RED);
-  }
 
   SelectObject();
   MoveSelectedObject();
@@ -231,8 +180,6 @@ void TutorialGame::InitWorld() {
 
   AddFloorToWorld(Vector3(0, -20, 0));
 
-  player = AddPlayerToWorld(Vector3(0, -15, 0));
-
   BridgeConstraintTest();
 
   AddStateObjectToWorld(Vector3(50, 50, 50));
@@ -292,6 +239,11 @@ void TutorialGame::InitCollisionTest() {
                       Quaternion::EulerAnglesToQuaternion(0, 0, 90), 0.0f);
   }
   addSet(25);
+}
+
+Player *TutorialGame::SpawnPlayer(int id) {
+  Vector3 pos = Vector3(0, 0, id * 2);
+  return AddPlayerToWorld(pos, id);
 }
 
 #pragma region World Building Functions
@@ -436,12 +388,12 @@ StateGameObject *TutorialGame::AddStateObjectToWorld(const Vector3 &position) {
   return apple;
 }
 
-Player *TutorialGame::AddPlayerToWorld(const Vector3 &position) {
+Player *TutorialGame::AddPlayerToWorld(const Vector3 &position, int id) {
   float meshSize = 1.0f;
   float inverseMass = 0.5f;
 
-  auto *character = new Player(world.GetMainCamera());
-  auto *volume = new CapsuleVolume(1.0f, 0.5f);
+  auto character = new Player(id, &world, pane, world.GetMainCamera());
+  auto volume = new CapsuleVolume(1.0f, 0.5f);
 
   character->SetBoundingVolume(volume);
 

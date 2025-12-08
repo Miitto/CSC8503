@@ -27,7 +27,7 @@ protected:
     std::chrono::steady_clock::time_point lastPingSentTime;
     int attemptsLeft = 3;
     std::function<void(ConnectionFailure)> cb;
-    uint16_t messageType = static_cast<uint16_t>(BasicNetworkMessages::Ping);
+    std::unique_ptr<GamePacket> packet;
   };
 
 public:
@@ -58,11 +58,11 @@ public:
 
     SetupPacketHandlers();
 
-    net->SendPacket(BasicNetworkMessages::Hello);
+    net->SendPacket(HelloPacket(-1));
     pingInfo = {
         .lastPingSentTime = std::chrono::high_resolution_clock::now(),
         .cb = cb,
-        .messageType = static_cast<uint16_t>(BasicNetworkMessages::Hello),
+        .packet = std::make_unique<GamePacket>(BasicNetworkMessages::Ping),
     };
   }
 
@@ -100,7 +100,10 @@ protected:
   std::optional<PingInfo> pingInfo = std::nullopt;
 
   std::optional<GameClient> net = std::nullopt;
-
   std::optional<NCL::CSC8503::ServerCore> serverNet = std::nullopt;
+  int ourPlayerId = -1;
+  std::vector<int> connectedPlayers;
+
+  Vector3 lastPlayerPos = Vector3(0, 0, 0);
 };
 } // namespace NCL::CSC8503

@@ -16,7 +16,6 @@ public:
 
   bool Connect(IP ip);
 
-  void SendPacket(GamePacketType type);
   void SendPacket(GamePacket &payload);
   void SendPacket(GamePacket &&payload);
 

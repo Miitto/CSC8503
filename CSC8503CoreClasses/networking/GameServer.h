@@ -17,11 +17,9 @@ public:
 
   void SetGameWorld(GameWorld &g);
 
-  bool SendPacketToClient(int clientID, GamePacketType type);
   bool SendPacketToClient(int clientID, GamePacket &packet);
   bool SendPacketToClient(int clientID, GamePacket &&packet);
 
-  bool SendGlobalPacket(GamePacketType type);
   bool SendGlobalPacket(GamePacket &packet);
   bool SendGlobalPacket(GamePacket &&packet);
 

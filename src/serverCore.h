@@ -85,7 +85,9 @@ protected:
 class ServerCore : public PacketReceiver {
 public:
   ServerCore(uint16_t port, int maxClients);
-  ~ServerCore() { net.SendGlobalPacket(BasicNetworkMessages::Shutdown); }
+  ~ServerCore() {
+    net.SendGlobalPacket(GamePacket(BasicNetworkMessages::Shutdown));
+  }
 
   void RegisterPacketHandler(GamePacketType type, PacketReceiver *receiver) {
     net.RegisterPacketHandler(type, receiver);

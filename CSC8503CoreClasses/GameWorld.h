@@ -13,6 +13,7 @@ class PerspectiveCamera;
 
 namespace CSC8503 {
 class GameObject;
+class GamePlayer;
 class Constraint;
 
 typedef std::function<void(GameObject *)> GameObjectFunc;
@@ -27,10 +28,9 @@ public:
   void ClearAndErase();
 
   void AddGameObject(GameObject *o);
-  void AddPlayerObject(GameObject *o, bool addedAsGameObject = false);
+  void AddPlayerObject(GamePlayer *o);
   void RemoveGameObject(GameObject *o, bool andDelete = false);
-  void RemovePlayerObject(GameObject *o, bool andDelete = false,
-                          bool removeFromGameObjects = false);
+  void RemovePlayerObject(GamePlayer *o, bool andDelete = false);
 
   void AddConstraint(Constraint *c);
   void RemoveConstraint(Constraint *c, bool andDelete = false);
@@ -73,6 +73,20 @@ public:
   GetConstraintIterators(std::vector<Constraint *>::const_iterator &first,
                          std::vector<Constraint *>::const_iterator &last) const;
 
+  GamePlayer *GetPlayer(int id) {
+    if (players.find(id) != players.end()) {
+      return players[id];
+    }
+    return nullptr;
+  }
+
+  const GamePlayer *GetPlayer(int id) const {
+    if (players.find(id) != players.end()) {
+      return players.at(id);
+    }
+    return nullptr;
+  }
+
   IteratorRange<std::vector<GameObject *>::iterator> GetObjectRange() {
     return IteratorRange(gameObjects.begin(), gameObjects.end());
   }
@@ -80,10 +94,10 @@ public:
   GetObjectRange() const {
     return IteratorRange(gameObjects.cbegin(), gameObjects.cend());
   }
-  IteratorRange<std::vector<GameObject *>::iterator> GetPlayerRange() {
+  IteratorRange<std::map<int, GamePlayer *>::iterator> GetPlayerRange() {
     return IteratorRange(players.begin(), players.end());
   }
-  IteratorRange<std::vector<GameObject *>::const_iterator>
+  IteratorRange<std::map<int, GamePlayer *>::const_iterator>
   GetPlayerRange() const {
     return IteratorRange(players.cbegin(), players.cend());
   }
@@ -102,21 +116,6 @@ public:
     return gameObjects.cend();
   }
 
-  std::vector<GameObject *>::iterator playerBegin() { return players.begin(); }
-  std::vector<GameObject *>::iterator playerEnd() { return players.end(); }
-  std::vector<GameObject *>::const_iterator playerBegin() const noexcept {
-    return players.begin();
-  }
-  std::vector<GameObject *>::const_iterator playerEnd() const noexcept {
-    return players.end();
-  }
-  std::vector<GameObject *>::const_iterator playerCbegin() const noexcept {
-    return players.cbegin();
-  }
-  std::vector<GameObject *>::const_iterator playerCend() const noexcept {
-    return players.cend();
-  }
-
   int GetWorldStateID() const { return worldStateCounter; }
 
   void SetSunPosition(const Vector3 &pos) { sunPosition = pos; }
@@ -131,7 +130,7 @@ public:
 
 protected:
   std::vector<GameObject *> gameObjects;
-  std::vector<GameObject *> players;
+  std::map<int, GamePlayer *> players;
   std::vector<Constraint *> constraints;
 
   PerspectiveCamera mainCamera;

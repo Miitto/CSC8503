@@ -33,6 +33,7 @@ protected:
   std::optional<Nav> nav;
   BehaviourSelector rootBehaviour;
   float viewDistance;
+  float viewAngle = 45.0f;
   float speed = 10.0f;
 };
 } // namespace NCL::CSC8503

@@ -66,12 +66,6 @@ void GameClient::UpdateClient() {
   }
 }
 
-void GameClient::SendPacket(GamePacketType type) {
-  GamePacket packet;
-  packet.type = type;
-  SendPacket(packet);
-}
-
 void GameClient::SendPacket(GamePacket &payload) {
   NET_TRACE("GameClient sending packet of type {}", payload.type);
   auto packet = enet_packet_create(&payload, payload.GetTotalSize(), 0);
