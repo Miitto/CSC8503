@@ -39,6 +39,11 @@ public:
   Transform &GetTransform() { return transform; }
   const Transform &GetTransform() const { return transform; }
 
+  void SetResetTransform(const Transform &t) { resetTransform = t; }
+  void SetCurrentTransformAsReset() { resetTransform = transform; }
+
+  void Reset() { transform = resetTransform; }
+
   RenderObject *GetRenderObject() const { return renderObject; }
 
   PhysicsObject *GetPhysicsObject() const { return physicsObject; }
@@ -71,6 +76,7 @@ public:
 
 protected:
   Transform transform;
+  Transform resetTransform;
 
   CollisionVolume *boundingVolume;
   PhysicsObject *physicsObject;

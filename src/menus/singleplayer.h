@@ -31,16 +31,7 @@ public:
     auto res = selectLevel(frame);
 
     if (res.has_value()) {
-      switch (*res) {
-      case Level::Default: {
-        game.InitWorld();
-        break;
-      }
-      case Level::CollisionTest: {
-        game.InitCollisionTest();
-        break;
-      }
-      }
+      game.SelectLevel(res.value());
       *newState = new InLevel(game);
       return Push;
     }

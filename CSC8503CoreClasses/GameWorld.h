@@ -127,6 +127,7 @@ public:
   Vector3 GetSunColour() const { return sunColour; }
 
   PathfindingService &pathfind() { return pathfinding; }
+  const PathfindingService &pathfind() const { return pathfinding; }
 
 protected:
   std::vector<GameObject *> gameObjects;

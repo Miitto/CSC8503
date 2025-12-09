@@ -192,6 +192,8 @@ void TutorialGame::InitWorld() {
 
   AddCubeToWorld(Vector3(0, 20, -20), Vector3(2, 2, 2), 0.0f,
                  new Oscillator({{0, 20, -20}, {}}, {{0, 40, -20}, {}}, 10.f));
+
+  AddEnemyToWorld(Vector3(-10, 0, 10));
 }
 
 void TutorialGame::InitCollisionTest() {
@@ -393,7 +395,7 @@ Player *TutorialGame::AddPlayerToWorld(const Vector3 &position, int id) {
   float inverseMass = 0.5f;
 
   auto character = new Player(id, &world, pane, world.GetMainCamera());
-  auto volume = new CapsuleVolume(1.0f, 0.5f);
+  auto volume = new CapsuleVolume(1.0f * meshSize, 0.5f * meshSize);
 
   character->SetBoundingVolume(volume);
 
@@ -421,9 +423,9 @@ GameObject *TutorialGame::AddEnemyToWorld(const Vector3 &position) {
   float meshSize = 3.0f;
   float inverseMass = 0.5f;
 
-  GameObject *character = new GameObject();
+  Enemy *character = new Enemy(world);
 
-  AABBVolume *volume = new AABBVolume(Vector3(0.3f, 0.9f, 0.3f) * meshSize);
+  CapsuleVolume *volume = new CapsuleVolume(0.5f * meshSize, 0.5f * meshSize);
   character->SetBoundingVolume(volume);
 
   character->GetTransform()

@@ -141,7 +141,7 @@ PathfindingService::~PathfindingService() {
 
 std::future<PathfindingService::Result>
 PathfindingService::requestPath(const Maths::Vector3 &from,
-                                const Maths::Vector3 &to, bool center) {
+                                const Maths::Vector3 &to, bool center) const {
   std::promise<PathfindingService::Result> promise;
   auto future = promise.get_future();
 

@@ -14,6 +14,10 @@ public:
     AttachFrontRightCorner = BIT(2),
     AttachBackLeftCorner = BIT(3),
     AttachBackRightCorner = BIT(4),
+    MoveForward = BIT(5),
+    MoveBackward = BIT(6),
+    MoveLeft = BIT(7),
+    MoveRight = BIT(8)
   };
 
   using ActionFlags = Bitflag<Actions>;

@@ -68,15 +68,7 @@ void ClientGame::NetworkUpdate(float dt) {
   if (!net)
     return;
 
-  ClientPacket newPacket;
-
-  Player::ActionFlags a;
-  if (Window::GetKeyboard()->KeyPressed(KeyCodes::SPACE)) {
-    a.set(Player::Actions::Jump);
-  }
-
-  newPacket.actions = a.flags;
-  net->SendPacket(newPacket);
+  net->SendPacket(createClientPacket());
 }
 
 void ClientGame::PingCheck(float dt) {
@@ -151,6 +143,31 @@ void ClientGame::UpdateGame(float dt) {
   }
 
   NetworkedGame::UpdateGame(dt);
+
+  if (player)
+    player->Input(dt, createClientPacket());
+}
+
+ClientPacket ClientGame::createClientPacket() {
+  Bitflag<Player::Actions> actions;
+
+  auto &kb = *Window::GetKeyboard();
+
+  if (kb.KeyDown(KeyCodes::W))
+    actions.set(Player::Actions::MoveForward);
+  if (kb.KeyDown(KeyCodes::S))
+    actions.set(Player::Actions::MoveBackward);
+  if (kb.KeyDown(KeyCodes::A))
+    actions.set(Player::Actions::MoveLeft);
+  if (kb.KeyDown(KeyCodes::D))
+    actions.set(Player::Actions::MoveRight);
+  if (kb.KeyDown(KeyCodes::SPACE))
+    actions.set(Player::Actions::Jump);
+
+  ClientPacket p;
+  p.actions = actions.flags;
+
+  return p;
 }
 
 void ClientGame::ReceivePacket(GamePacketType type, GamePacket *payload,

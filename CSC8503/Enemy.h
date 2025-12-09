@@ -2,8 +2,9 @@
 
 #include "GameObject.h"
 #include "GameWorld.h"
-#include "ai/behaviour_trees/BehaviourSelector.h"
+#include "ai/behaviour_trees/BehaviourSequence.h"
 #include "ai/pathfinding/PathfindingService.h"
+#include "ai/state_machine/StateMachine.h"
 #include <optional>
 
 namespace NCL::CSC8503 {
@@ -14,11 +15,18 @@ public:
 
   void Update(float dt) override;
 
+  Enemy &AddPatrolPoint(Vector3 point) {
+    patrolPoints.push_back(point);
+    return *this;
+  }
+
 protected:
   void InitializeBehaviours();
 
   void CheckNavRequest();
   bool NavigateTo(const Vector3 &targetPos);
+
+  void UpdateToClosestPatrolPoint();
 
   const GameWorld &world;
   std::optional<PathfindingService::Request> navRequest;
@@ -31,9 +39,18 @@ protected:
   };
 
   std::optional<Nav> nav;
-  BehaviourSelector rootBehaviour;
+  BehaviourSequence rootBehaviour;
+  StateMachine pathfindingMachine;
+
   float viewDistance;
+  float reach = 2.0f;
   float viewAngle = 45.0f;
   float speed = 10.0f;
+
+  float timeSinceSeenPlayer = 0.0f;
+  Vector3 lastSeenPlayerPos;
+
+  std::vector<Vector3> patrolPoints;
+  size_t currentPatrolPoint = 0;
 };
 } // namespace NCL::CSC8503

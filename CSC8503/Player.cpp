@@ -26,8 +26,26 @@ void Player::Input(float dt, ClientPacket input) {
 
   Bitflag<Actions> flags(input.actions);
 
+  constexpr float speed = 10.f;
+
+  if (flags.has(Actions::MoveForward)) {
+    phys.AddForce(forward * speed);
+  }
+
+  if (flags.has(Actions::MoveBackward)) {
+    phys.AddForce(-forward * speed);
+  }
+
+  if (flags.has(Actions::MoveLeft)) {
+    phys.AddForce(-right * speed);
+  }
+
+  if (flags.has(Actions::MoveRight)) {
+    phys.AddForce(right * speed);
+  }
+
   if (flags.has(Actions::Jump) && world->IsOnGround(this)) {
-    phys.AddForce(forward * 50.0f);
+    phys.ApplyLinearImpulse(UP * 50.0f);
   }
 
   if (pane) {

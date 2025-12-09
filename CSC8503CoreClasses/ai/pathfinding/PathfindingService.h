@@ -47,11 +47,11 @@ public:
   using Request = std::future<Result>;
 
   Request requestPath(const Maths::Vector3 &from, const Maths::Vector3 &to,
-                      bool center = false);
+                      bool center = false) const;
 
 protected:
   std::thread serverThread;
-  mpsc::Sender<ServerRequest> requests;
+  mutable mpsc::Sender<ServerRequest> requests;
 };
 } // namespace NCL::CSC8503
 
