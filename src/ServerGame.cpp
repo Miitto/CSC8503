@@ -13,7 +13,7 @@ ServerGame::ServerGame(GameWorld &gameWorld,
                        GameTechRendererInterface &renderer,
                        PhysicsSystem &physics)
     : NetworkedGame(gameWorld, renderer, physics),
-      net({NetworkBase::GetDefaultPort(), 4}) {
+      net({NetworkBase::GetDefaultPort(), 4, *this}) {
 
   NetworkBase::Initialise();
   timeToNextPacket = 0.0f;
@@ -42,9 +42,25 @@ void ServerGame::StartLevel(Level level) {
   }
 
   net.OnLevelUpdate(level);
+
+  for (auto &player : world.GetPlayerRange()) {
+    NCL::CSC8503::NetworkObject *netObj = player.second->GetNetworkObject();
+    if (netObj) {
+      networkObjects.push_back(netObj);
+    }
+  }
+
+  for (auto &obj : world) {
+    NCL::CSC8503::NetworkObject *netObj = obj->GetNetworkObject();
+    if (netObj && std::find(networkObjects.begin(), networkObjects.end(),
+                            netObj) == networkObjects.end()) {
+      networkObjects.push_back(netObj);
+    }
+  }
 }
 
 void ServerGame::EndLevel() {
+  net.OnLevelEnd();
   Level nextLevel = Level::Default;
 
   switch (net.GetCurrentLevel()) {

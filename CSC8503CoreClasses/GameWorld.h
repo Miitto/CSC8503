@@ -35,8 +35,10 @@ public:
   void AddConstraint(Constraint *c);
   void RemoveConstraint(Constraint *c, bool andDelete = false);
 
-  PerspectiveCamera &GetMainCamera() { return mainCamera; }
-  const PerspectiveCamera &GetMainCamera() const { return mainCamera; }
+  PerspectiveCamera *GetMainCamera() { return mainCamera; }
+  const PerspectiveCamera *GetMainCamera() const { return mainCamera; }
+
+  void SetMainCamera(PerspectiveCamera *c) { mainCamera = c; }
 
   void ShuffleConstraints(bool state) { shuffleConstraints = state; }
 
@@ -134,7 +136,7 @@ protected:
   std::map<int, GamePlayer *> players;
   std::vector<Constraint *> constraints;
 
-  PerspectiveCamera mainCamera;
+  PerspectiveCamera *mainCamera;
 
   PathfindingService pathfinding;
 

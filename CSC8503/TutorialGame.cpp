@@ -40,20 +40,8 @@ TutorialGame::TutorialGame(GameWorld &inWorld,
   useGravity = true;
   freeCursor = false;
 
-  controller = new KeyboardMouseController(*Window::GetWindow()->GetKeyboard(),
-                                           *Window::GetWindow()->GetMouse());
-
-  world.GetMainCamera().SetController(*controller);
-
   world.SetSunPosition({-200.0f, 60.0f, -200.0f});
   world.SetSunColour({0.8f, 0.8f, 0.5f});
-
-  controller->MapAxis(0, "Sidestep");
-  controller->MapAxis(1, "UpDown");
-  controller->MapAxis(2, "Forward");
-
-  controller->MapAxis(3, "XLook");
-  controller->MapAxis(4, "YLook");
 
   cubeMesh = renderer.LoadMesh("cube.msh");
   sphereMesh = renderer.LoadMesh("sphere.msh");
@@ -76,8 +64,6 @@ TutorialGame::TutorialGame(GameWorld &inWorld,
 
   glassMaterial.type = MaterialType::Transparent;
   glassMaterial.diffuseTex = glassTex;
-
-  InitCamera();
 }
 
 TutorialGame::~TutorialGame() {}
@@ -94,7 +80,9 @@ void TutorialGame::UpdateGame(float dt) {
   }
 
   if (updateCamera && !freeCursor) {
-    world.GetMainCamera().UpdateCamera(dt);
+    auto *cam = world.GetMainCamera();
+    if (cam)
+      cam->UpdateCamera(dt);
   }
 
   if (Window::GetKeyboard()->KeyPressed(KeyCodes::Q)) {
@@ -133,17 +121,12 @@ void TutorialGame::DebugUi() {
 
   {
     auto frame = NCL::gui::Frame("Camera");
-    auto pos = world.GetMainCamera().GetPosition();
-    frame.text("Camera Position: (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
+    auto *cam = world.GetMainCamera();
+    if (cam) {
+      auto pos = cam->GetPosition();
+      frame.text("Camera Position: (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
+    }
   }
-}
-
-void TutorialGame::InitCamera() {
-  world.GetMainCamera().SetNearPlane(0.1f);
-  world.GetMainCamera().SetFarPlane(500.0f);
-  world.GetMainCamera().SetPitch(-15.0f);
-  world.GetMainCamera().SetYaw(315.0f);
-  world.GetMainCamera().SetPosition(Vector3(-60, 40, 60));
 }
 
 void TutorialGame::Clear() {
@@ -152,6 +135,7 @@ void TutorialGame::Clear() {
 
   pane = nullptr;
   player = nullptr;
+  world.SetMainCamera(nullptr);
 }
 
 void TutorialGame::InitWorld() {
@@ -236,8 +220,19 @@ void TutorialGame::InitCollisionTest() {
 }
 
 Player *TutorialGame::SpawnPlayer(int id) {
+  DEBUG("Spawning player with ID {}", id);
   Vector3 pos = Vector3(0, 1, id * 2);
   return AddPlayerToWorld(pos, id);
+}
+
+void TutorialGame::RemovePlayer(int id) {
+  for (auto &player : world.GetPlayerRange()) {
+    if (player.first == id) {
+      world.RemovePlayerObject(player.second, true);
+      DEBUG("Removed player with ID {}", id);
+      return;
+    }
+  }
 }
 
 #pragma region World Building Functions
@@ -393,7 +388,7 @@ Player *TutorialGame::AddPlayerToWorld(const Vector3 &position, int id) {
   float meshSize = 1.0f;
   float inverseMass = 0.5f;
 
-  auto character = new Player(id, &world, pane, world.GetMainCamera());
+  auto character = new Player(id, &world, pane);
   auto volume = new SphereVolume(1.0f * meshSize);
 
   character->SetBoundingVolume(volume);

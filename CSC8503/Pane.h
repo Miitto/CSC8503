@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Camera.h"
 #include "Debug.h"
 #include "GameObject.h"
 #include "GameWorld.h"
@@ -46,8 +47,7 @@ public:
     ropes.br.constraint->deactivate();
   }
 
-  void AttachCorner(Corner currentCorner) {
-    auto &cam = world->GetMainCamera();
+  void AttachCorner(Corner currentCorner, NCL::Camera &cam) {
     Quaternion camRot =
         Quaternion::EulerAnglesToQuaternion(cam.GetPitch(), cam.GetYaw(), 0.f);
     auto forward = camRot * NCL::Maths::Vector3(0, 0, -1);

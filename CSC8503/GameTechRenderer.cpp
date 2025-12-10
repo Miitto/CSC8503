@@ -187,7 +187,12 @@ void GameTechRenderer::BuildObjectLists() {
   opaqueObjects.clear();
   transparentObjects.clear();
 
-  Vector3 camPos = gameWorld.GetMainCamera().GetPosition();
+  auto cam = gameWorld.GetMainCamera();
+
+  if (!cam)
+    return;
+
+  Vector3 camPos = cam->GetPosition();
 
   gameWorld.OperateOnContents([&](GameObject *o) {
     if (o->IsActive()) {
@@ -264,9 +269,13 @@ void GameTechRenderer::RenderSkyboxPass() {
   glDisable(GL_BLEND);
   glDisable(GL_DEPTH_TEST);
 
-  Matrix4 viewMatrix = gameWorld.GetMainCamera().BuildViewMatrix();
-  Matrix4 projMatrix = gameWorld.GetMainCamera().BuildProjectionMatrix(
-      hostWindow.GetScreenAspect());
+  auto camP = gameWorld.GetMainCamera();
+  if (!camP)
+    return;
+  auto &cam = *camP;
+
+  Matrix4 viewMatrix = cam.BuildViewMatrix();
+  Matrix4 projMatrix = cam.BuildProjectionMatrix(hostWindow.GetScreenAspect());
 
   UseShader(*skyboxShader);
 
@@ -295,6 +304,11 @@ void GameTechRenderer::RenderSkyboxPass() {
 void GameTechRenderer::RenderOpaquePass(std::vector<ObjectSortState> &list) {
   glDisable(GL_BLEND);
   glEnable(GL_CULL_FACE);
+
+  auto camP = gameWorld.GetMainCamera();
+  if (!camP)
+    return;
+  auto &cam = *camP;
 
   UseShader(*defaultShader);
 
@@ -325,13 +339,12 @@ void GameTechRenderer::RenderOpaquePass(std::vector<ObjectSortState> &list) {
   int shadowLocation =
       glGetUniformLocation(activeShader->GetProgramID(), "shadowMatrix");
 
-  Matrix4 viewMatrix = gameWorld.GetMainCamera().BuildViewMatrix();
-  Matrix4 projMatrix = gameWorld.GetMainCamera().BuildProjectionMatrix(
-      hostWindow.GetScreenAspect());
+  Matrix4 viewMatrix = cam.BuildViewMatrix();
+  Matrix4 projMatrix = cam.BuildProjectionMatrix(hostWindow.GetScreenAspect());
   glUniformMatrix4fv(projLocation, 1, false, (float *)&projMatrix);
   glUniformMatrix4fv(viewLocation, 1, false, (float *)&viewMatrix);
 
-  Vector3 camPos = gameWorld.GetMainCamera().GetPosition();
+  Vector3 camPos = cam.GetPosition();
   glUniform3fv(cameraLocation, 1, &camPos.x);
 
   Vector3 sunPos = gameWorld.GetSunPosition();
@@ -379,6 +392,11 @@ void GameTechRenderer::RenderTransparentPass(
   glEnable(GL_BLEND);
   glEnable(GL_CULL_FACE);
 
+  auto camP = gameWorld.GetMainCamera();
+  if (!camP)
+    return;
+  auto &cam = *camP;
+
   UseShader(*defaultShader);
 
   int projLocation =
@@ -408,13 +426,12 @@ void GameTechRenderer::RenderTransparentPass(
   int shadowLocation =
       glGetUniformLocation(activeShader->GetProgramID(), "shadowMatrix");
 
-  Matrix4 viewMatrix = gameWorld.GetMainCamera().BuildViewMatrix();
-  Matrix4 projMatrix = gameWorld.GetMainCamera().BuildProjectionMatrix(
-      hostWindow.GetScreenAspect());
+  Matrix4 viewMatrix = cam.BuildViewMatrix();
+  Matrix4 projMatrix = cam.BuildProjectionMatrix(hostWindow.GetScreenAspect());
   glUniformMatrix4fv(projLocation, 1, false, (float *)&projMatrix);
   glUniformMatrix4fv(viewLocation, 1, false, (float *)&viewMatrix);
 
-  Vector3 camPos = gameWorld.GetMainCamera().GetPosition();
+  Vector3 camPos = cam.GetPosition();
   glUniform3fv(cameraLocation, 1, &camPos.x);
 
   Vector3 sunPos = gameWorld.GetSunPosition();
@@ -471,9 +488,13 @@ void GameTechRenderer::RenderLines() {
     return;
   }
 
-  Matrix4 viewMatrix = gameWorld.GetMainCamera().BuildViewMatrix();
-  Matrix4 projMatrix = gameWorld.GetMainCamera().BuildProjectionMatrix(
-      hostWindow.GetScreenAspect());
+  auto camP = gameWorld.GetMainCamera();
+  if (!camP)
+    return;
+  auto &cam = *camP;
+
+  Matrix4 viewMatrix = cam.BuildViewMatrix();
+  Matrix4 projMatrix = cam.BuildProjectionMatrix(hostWindow.GetScreenAspect());
 
   Matrix4 viewProj = projMatrix * viewMatrix;
 

@@ -16,6 +16,11 @@ public:
 
   void UpdateGame(float dt) override;
 
+  void Clear() override {
+    networkObjects.clear();
+    TutorialGame::Clear();
+  }
+
 protected:
   virtual void NetworkUpdate(float dt) = 0;
 

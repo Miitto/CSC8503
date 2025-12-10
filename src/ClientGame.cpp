@@ -56,7 +56,7 @@ void ClientGame::Disconnect() {
 }
 
 void ClientGame::InitServer(uint16_t port, int maxClients) {
-  serverNet.emplace(port, maxClients);
+  serverNet.emplace(port, maxClients, *this);
 }
 
 void ClientGame::ShutdownServer() { serverNet = std::nullopt; }
@@ -69,7 +69,8 @@ void ClientGame::NetworkUpdate(float dt) {
   if (!net)
     return;
 
-  net->SendPacket(createClientPacket());
+  if (!serverNet)
+    net->SendPacket(createClientPacket());
 }
 
 void ClientGame::PingCheck(float dt) {
@@ -122,15 +123,39 @@ void ClientGame::StartLevel(Level level) {
     return;
   }
 
-  player = SpawnPlayer(ourPlayerId);
-  for (auto id : connectedPlayers) {
-    if (id != ourPlayerId) {
-      SpawnPlayer(id);
+  if (!serverNet) {
+    if (!net) {
+      player = SpawnPlayer(ourPlayerId);
+    }
+
+    if (net) {
+      for (auto id : connectedPlayers) {
+        if (id != ourPlayerId) {
+          SpawnPlayer(id);
+        }
+      }
+      player = SpawnPlayer(ourPlayerId);
+    }
+  } else {
+    serverNet->OnLevelUpdate(level);
+    player = serverNet->SpawnHostPlayer();
+  }
+
+  world.SetMainCamera(&player->GetCamera());
+
+  for (auto &player : world.GetPlayerRange()) {
+    NCL::CSC8503::NetworkObject *netObj = player.second->GetNetworkObject();
+    if (netObj) {
+      networkObjects.push_back(netObj);
     }
   }
 
-  if (serverNet) {
-    serverNet->OnLevelUpdate(level);
+  for (auto &obj : world) {
+    NCL::CSC8503::NetworkObject *netObj = obj->GetNetworkObject();
+    if (netObj && std::find(networkObjects.begin(), networkObjects.end(),
+                            netObj) == networkObjects.end()) {
+      networkObjects.push_back(netObj);
+    }
   }
 }
 
@@ -148,6 +173,7 @@ void ClientGame::EndLevel() {
 
   if (serverNet) {
     TutorialGame::EndLevel();
+    serverNet->OnLevelEnd();
     serverNet->OnLevelUpdate(nextLevel);
   } else if (!net) {
     TutorialGame::EndLevel();
@@ -262,11 +288,19 @@ void ClientGame::ReceivePacket(GamePacketType type, GamePacket *payload,
   case BasicNetworkMessages::Player_Connected: {
     auto pc = GamePacket::as<PlayerConnectedPacket>(payload);
     NET_INFO("Player {} has connected.", pc->id);
+    connectedPlayers.push_back(pc->id);
+    if (!serverNet) {
+      SpawnPlayer(pc->id);
+    }
     break;
   }
   case BasicNetworkMessages::Player_Disconnected: {
     auto pd = GamePacket::as<PlayerDisconnectedPacket>(payload);
     NET_INFO("Player {} has disconnected.", pd->id);
+    connectedPlayers.erase(
+        std::remove(connectedPlayers.begin(), connectedPlayers.end(), pd->id),
+        connectedPlayers.end());
+    RemovePlayer(pd->id);
     break;
   }
   case BasicNetworkMessages::Shutdown: {

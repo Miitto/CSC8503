@@ -2,11 +2,13 @@
 
 #include "GameObject.h"
 #include "GameWorld.h"
+#include "TutorialGame.h"
 #include "logging/logger.h"
 #include "networking/GameServer.h"
 #include "networking/NetworkBase.h"
 #include "networking/NetworkObject.h"
 
+#include "Player.h"
 #include <levels.h>
 #include <map>
 #include <vector>
@@ -18,6 +20,7 @@ using ClientId = int;
 struct NetworkClient {
   ENetPeer *peer;
   ClientId clientID; // Duplicate of peer ID for convenience
+  Player *playerObj;
   int lastReceivedStateID;
 };
 
@@ -39,10 +42,21 @@ public:
     return clients.find(clientID);
   }
 
+  std::map<ClientId, NetworkClient>::iterator begin() {
+    return clients.begin();
+  }
+  std::map<ClientId, NetworkClient>::iterator end() { return clients.end(); }
   std::map<ClientId, NetworkClient>::const_iterator begin() const {
-    return clients.cbegin();
+    return clients.begin();
   }
   std::map<ClientId, NetworkClient>::const_iterator end() const {
+    return clients.end();
+  }
+
+  std::map<ClientId, NetworkClient>::const_iterator cbegin() {
+    return clients.cbegin();
+  }
+  std::map<ClientId, NetworkClient>::const_iterator cend() {
     return clients.cend();
   }
 
@@ -84,7 +98,7 @@ protected:
 
 class ServerCore : public PacketReceiver {
 public:
-  ServerCore(uint16_t port, int maxClients);
+  ServerCore(uint16_t port, int maxClients, TutorialGame &game);
   ~ServerCore() {
     net.SendGlobalPacket(GamePacket(BasicNetworkMessages::Shutdown));
   }
@@ -106,8 +120,26 @@ public:
   const ClientDir &GetClients() const { return clients; }
 
   void OnLevelUpdate(Level level);
+  void OnLevelEnd();
 
   Level &GetCurrentLevel() { return currentLevel; }
+
+  Player *SpawnHostPlayer() {
+    Player *player = game.SpawnPlayer(-1);
+    clients.insert(NetworkClient{.peer = nullptr,
+                                 .clientID = -1,
+                                 .playerObj = player,
+                                 .lastReceivedStateID = -1});
+    net.SendGlobalPacket(PlayerConnectedPacket(-1));
+
+    return player;
+  }
+
+  Player *GetClientPlayer(ClientId clientID) {
+    if (!clients.contains(clientID))
+      return nullptr;
+    return clients.get(clientID).playerObj;
+  }
 
 protected:
   const int PACKETS_PER_SNAPSHOT = 5;
@@ -119,5 +151,7 @@ protected:
   ClientDir clients;
 
   Level currentLevel = Level::Default;
+
+  TutorialGame &game;
 };
 } // namespace NCL::CSC8503

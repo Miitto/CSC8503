@@ -30,7 +30,9 @@ void Player::Input(float dt, ClientPacket input) {
 
   Bitflag<Actions> flags(input.actions);
 
-  constexpr float speed = 10.f;
+  constexpr float baseSpeed = 1000.f;
+
+  float speed = baseSpeed * dt;
 
   if (flags.has(Actions::MoveForward)) {
     phys.AddForce(forward * speed);
@@ -54,19 +56,19 @@ void Player::Input(float dt, ClientPacket input) {
 
   if (pane) {
     if (flags.has(Actions::AttachFrontLeftCorner)) {
-      pane->AttachCorner(Pane::Corner::FrontLeft);
+      pane->AttachCorner(Pane::Corner::FrontLeft, camera);
     }
 
     if (flags.has(Actions::AttachFrontRightCorner)) {
-      pane->AttachCorner(Pane::Corner::FrontRight);
+      pane->AttachCorner(Pane::Corner::FrontRight, camera);
     }
 
     if (flags.has(Actions::AttachBackLeftCorner)) {
-      pane->AttachCorner(Pane::Corner::BackLeft);
+      pane->AttachCorner(Pane::Corner::BackLeft, camera);
     }
 
     if (flags.has(Actions::AttachBackRightCorner)) {
-      pane->AttachCorner(Pane::Corner::BackRight);
+      pane->AttachCorner(Pane::Corner::BackRight, camera);
     }
 
     if (flags.has(Actions::ExtendFrontLeftCorner)) {

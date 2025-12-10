@@ -29,18 +29,18 @@ public:
 
   void RequestEndLevel() { shouldEndLevel = true; }
 
-  void Clear();
+  virtual void Clear();
   void InitWorld();
   void InitCollisionTest();
 
   Player *SpawnPlayer(int id);
+  void RemovePlayer(int id);
 
   void SetActive(bool state) { active = state; }
   void SetCameraActive(bool state) { updateCamera = state; }
   void SetShowUi(bool state) { showUi = state; }
 
 protected:
-  void InitCamera();
   virtual void EndLevel();
 
   /*
