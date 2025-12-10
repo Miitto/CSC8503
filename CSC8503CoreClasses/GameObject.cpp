@@ -17,6 +17,13 @@ GameObject::~GameObject() {
   delete networkObject;
 }
 
+void GameObject::Reset() {
+  transform = resetTransform;
+  if (physicsObject) {
+    physicsObject->Reset();
+  }
+}
+
 bool GameObject::GetBroadphaseAABB(Vector3 &outSize) const {
   if (!boundingVolume) {
     return false;

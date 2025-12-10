@@ -133,6 +133,25 @@ void ClientGame::StartLevel(Level level) {
   }
 }
 
+void ClientGame::EndLevel() {
+  Level nextLevel = Level::Default;
+
+  switch (currentLevel) {
+  case Level::Default:
+    nextLevel = Level::CollisionTest;
+    break;
+  case Level::CollisionTest:
+    nextLevel = Level::Default;
+    break;
+  }
+
+  if (serverNet) {
+    serverNet->OnLevelUpdate(nextLevel);
+  } else if (!net) {
+    SelectLevel(nextLevel);
+  }
+}
+
 void ClientGame::UpdateGame(float dt) {
   if (net) {
     net->UpdateClient();
@@ -163,6 +182,50 @@ ClientPacket ClientGame::createClientPacket() {
     actions.set(Player::Actions::MoveRight);
   if (kb.KeyDown(KeyCodes::SPACE))
     actions.set(Player::Actions::Jump);
+
+  bool shiftDown = kb.KeyDown(KeyCodes::SHIFT);
+  bool ctrlDown = kb.KeyDown(KeyCodes::CONTROL);
+
+  bool attaching = !shiftDown && !ctrlDown;
+  bool extending = !shiftDown && ctrlDown;
+  bool retracting = !ctrlDown && shiftDown;
+  bool detaching = shiftDown && ctrlDown;
+
+  if (kb.KeyDown(KeyCodes::NUM1) && attaching)
+    actions.set(Player::Actions::AttachFrontLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM2) && attaching)
+    actions.set(Player::Actions::AttachFrontRightCorner);
+  if (kb.KeyDown(KeyCodes::NUM3) && attaching)
+    actions.set(Player::Actions::AttachBackLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM4) && attaching)
+    actions.set(Player::Actions::AttachBackRightCorner);
+
+  if (kb.KeyDown(KeyCodes::NUM1) && extending)
+    actions.set(Player::Actions::ExtendFrontLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM2) && extending)
+    actions.set(Player::Actions::ExtendFrontRightCorner);
+  if (kb.KeyDown(KeyCodes::NUM3) && extending)
+    actions.set(Player::Actions::ExtendBackLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM4) && extending)
+    actions.set(Player::Actions::ExtendBackRightCorner);
+
+  if (kb.KeyDown(KeyCodes::NUM1) && retracting)
+    actions.set(Player::Actions::RetractFrontLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM2) && retracting)
+    actions.set(Player::Actions::RetractFrontRightCorner);
+  if (kb.KeyDown(KeyCodes::NUM3) && retracting)
+    actions.set(Player::Actions::RetractBackLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM4) && retracting)
+    actions.set(Player::Actions::RetractBackRightCorner);
+
+  if (kb.KeyDown(KeyCodes::NUM1) && detaching)
+    actions.set(Player::Actions::DetachFrontLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM2) && detaching)
+    actions.set(Player::Actions::DetachFrontRightCorner);
+  if (kb.KeyDown(KeyCodes::NUM3) && detaching)
+    actions.set(Player::Actions::DetachBackLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM4) && detaching)
+    actions.set(Player::Actions::DetachBackRightCorner);
 
   ClientPacket p;
   p.actions = actions.flags;

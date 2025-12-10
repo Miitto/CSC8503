@@ -1,5 +1,6 @@
 #include "TutorialGame.h"
 #include "GameWorld.h"
+#include "LevelEnd.h"
 #include "RenderObject.h"
 #include "TextureLoader.h"
 #include "physics/PhysicsObject.h"
@@ -68,6 +69,7 @@ TutorialGame::TutorialGame(GameWorld &inWorld,
   defaultTex = renderer.LoadTexture("Default.png");
   checkerTex = renderer.LoadTexture("checkerboard.png");
   glassTex = renderer.LoadTexture("stainedglass.tga");
+  paleGreenTex = renderer.LoadTexture("PaleGreen.png");
 
   checkerMaterial.type = MaterialType::Opaque;
   checkerMaterial.diffuseTex = checkerTex;
@@ -176,24 +178,35 @@ void TutorialGame::Clear() {
 void TutorialGame::InitWorld() {
   Clear();
 
-  CreatedMixedGrid(15, 15, 5.f, 5.f);
-
-  AddFloorToWorld(Vector3(0, -20, 0));
-
-  BridgeConstraintTest();
-
-  AddStateObjectToWorld(Vector3(50, 50, 50));
-  pane = AddPaneToWorld(Vector3(0, 10, -20), Vector2(4, 2), .5f);
+  pane = AddPaneToWorld(Vector3(10, 5, 0), Vector2(4, 2), .5f);
   pane->SetupConstraints(world);
 
-  NavigationGrid grid("TestGrid1.txt", {50, -16, 50});
-  AddNavigationGridToWorld(grid);
-  world.pathfind().add(std::move(grid));
+  NavigationMesh navMesh("lvl1.navmesh");
+  world.pathfind().add(std::move(navMesh));
 
-  AddCubeToWorld(Vector3(0, 20, -20), Vector3(2, 2, 2), 0.0f,
-                 new Oscillator({{0, 20, -20}, {}}, {{0, 40, -20}, {}}, 10.f));
+  struct Floor {
+    Vector3 position;
+    Vector3 scale;
+  };
 
-  AddEnemyToWorld(Vector3(-10, 0, 10));
+  constexpr Floor floors[] = {
+      {.position = {0, 0, 0}, .scale = {20, 1, 20}},
+      {.position = {20, 0, 0}, .scale = {20, 1, 2}},
+      {.position = {31, 0, -9}, .scale = {2, 1, 20}},
+      {.position = {42, 0, -18}, .scale = {20, 1, 2}},
+      {.position = {53, 0, -9}, .scale = {2, 1, 20}},
+      {.position = {64, 0, 0}, .scale = {20, 1, 2}},
+      {.position = {84, 0, 0}, .scale = {20, 1, 20}},
+      {.position = {-10.5, 9.5, 0}, .scale = {1, 20, 2}},
+      {.position = {94.5, 9.5, 0}, .scale = {1, 20, 2}},
+      {.position = {42, 20, 0}, .scale = {106, 1, 2}},
+  };
+
+  for (const Floor &floor : floors) {
+    AddCubeToWorld(floor.position, floor.scale, 0.0f);
+  }
+
+  AddLevelEndToWorld(Vector3(84, 5, 0), Vector3(5, 5, 5));
 }
 
 void TutorialGame::InitCollisionTest() {
@@ -244,7 +257,7 @@ void TutorialGame::InitCollisionTest() {
 }
 
 Player *TutorialGame::SpawnPlayer(int id) {
-  Vector3 pos = Vector3(0, 0, id * 2);
+  Vector3 pos = Vector3(0, 1, id * 2);
   return AddPlayerToWorld(pos, id);
 }
 
@@ -301,6 +314,8 @@ GameObject *TutorialGame::AddSphereToWorld(const Vector3 &position,
   sphere->GetPhysicsObject()->SetInverseMass(inverseMass);
   sphere->GetPhysicsObject()->InitSphereInertia();
 
+  sphere->SetCurrentTransformAsReset();
+
   world.AddGameObject(sphere);
 
   return sphere;
@@ -310,10 +325,10 @@ GameObject *TutorialGame::AddCubeToWorld(const Vector3 &position,
                                          Vector3 dimensions, float inverseMass,
                                          GameObject *cube) {
 
-  AABBVolume *volume = new AABBVolume(dimensions);
+  AABBVolume *volume = new AABBVolume(dimensions * 0.5f);
   cube->SetBoundingVolume(volume);
 
-  cube->GetTransform().SetPosition(position).SetScale(dimensions * 2.0f);
+  cube->GetTransform().SetPosition(position).SetScale(dimensions);
 
   cube->SetRenderObject(
       new RenderObject(cube->GetTransform(), cubeMesh, checkerMaterial));
@@ -322,6 +337,8 @@ GameObject *TutorialGame::AddCubeToWorld(const Vector3 &position,
 
   cube->GetPhysicsObject()->SetInverseMass(inverseMass);
   cube->GetPhysicsObject()->InitCubeInertia();
+
+  cube->SetCurrentTransformAsReset();
 
   world.AddGameObject(cube);
 
@@ -346,6 +363,7 @@ GameObject *TutorialGame::AddOBBToWorld(const Vector3 &position,
   obb->GetPhysicsObject()->SetInverseMass(inverseMass);
   obb->GetPhysicsObject()->InitCubeInertia();
   world.AddGameObject(obb);
+  obb->SetCurrentTransformAsReset();
   return obb;
 }
 
@@ -367,6 +385,8 @@ GameObject *TutorialGame::AddCapsuleToWorld(const Vector3 &position,
   capsule->GetPhysicsObject()->SetInverseMass(inverseMass);
   capsule->GetPhysicsObject()->InitSphereInertia();
   world.AddGameObject(capsule);
+
+  capsule->SetCurrentTransformAsReset();
   return capsule;
 }
 
@@ -395,7 +415,7 @@ Player *TutorialGame::AddPlayerToWorld(const Vector3 &position, int id) {
   float inverseMass = 0.5f;
 
   auto character = new Player(id, &world, pane, world.GetMainCamera());
-  auto volume = new CapsuleVolume(1.0f * meshSize, 0.5f * meshSize);
+  auto volume = new SphereVolume(1.0f * meshSize);
 
   character->SetBoundingVolume(volume);
 
@@ -415,6 +435,8 @@ Player *TutorialGame::AddPlayerToWorld(const Vector3 &position, int id) {
   character->GetPhysicsObject()->GetMaxAngularVelocity() = 10.f;
 
   world.AddPlayerObject(character);
+
+  character->SetCurrentTransformAsReset();
 
   return character;
 }
@@ -440,6 +462,8 @@ GameObject *TutorialGame::AddEnemyToWorld(const Vector3 &position) {
   character->GetPhysicsObject()->SetInverseMass(inverseMass);
   character->GetPhysicsObject()->InitSphereInertia();
 
+  character->SetCurrentTransformAsReset();
+
   world.AddGameObject(character);
 
   return character;
@@ -449,6 +473,7 @@ GameObject *TutorialGame::AddBonusToWorld(const Vector3 &position) {
   GameObject *apple = new GameObject();
 
   SphereVolume *volume = new SphereVolume(0.5f);
+  volume->SetTrigger();
   apple->SetBoundingVolume(volume);
   apple->GetTransform().SetScale(Vector3(2, 2, 2)).SetPosition(position);
 
@@ -482,8 +507,33 @@ Pane *TutorialGame::AddPaneToWorld(const Vector3 &position,
       new PhysicsObject(pane->GetTransform(), pane->GetBoundingVolume()));
   pane->GetPhysicsObject()->SetInverseMass(invMass);
   pane->GetPhysicsObject()->InitCubeInertia();
+
+  pane->SetCurrentTransformAsReset();
+
   world.AddGameObject(pane);
   return pane;
+}
+
+GameObject *TutorialGame::AddLevelEndToWorld(const Vector3 &position,
+                                             const Vector3 &scale) {
+  LevelEnd *levelEnd = new LevelEnd(*this);
+  auto *volume = new AABBVolume(scale * 0.5f);
+  volume->SetTrigger();
+  levelEnd->SetBoundingVolume(volume);
+  levelEnd->GetTransform().SetPosition(position).SetScale(scale);
+
+  GameTechMaterial levelEndMaterial;
+  levelEndMaterial.type = MaterialType::Transparent;
+  levelEndMaterial.diffuseTex = paleGreenTex;
+
+  levelEnd->SetRenderObject(
+      new RenderObject(levelEnd->GetTransform(), cubeMesh, levelEndMaterial));
+  levelEnd->SetPhysicsObject(new PhysicsObject(levelEnd->GetTransform(),
+                                               levelEnd->GetBoundingVolume()));
+  levelEnd->GetPhysicsObject()->SetInverseMass(0.0f);
+  world.AddGameObject(levelEnd);
+
+  return levelEnd;
 }
 
 void TutorialGame::AddNavigationGridToWorld(const NavigationGrid &grid) {

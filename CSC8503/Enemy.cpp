@@ -15,6 +15,7 @@ namespace NCL::CSC8503 {
 Enemy::Enemy(const GameWorld &w, const std::string name, float viewDistance)
     : GameObject(name), world(w), rootBehaviour(name),
       viewDistance(viewDistance) {
+  GetTags().set(Tag::Enemy);
   InitializeBehaviours();
 }
 

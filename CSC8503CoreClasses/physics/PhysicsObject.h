@@ -27,6 +27,13 @@ public:
 
   void ClampVelocities();
 
+  void Reset() {
+    linearVelocity = {};
+    angularVelocity = {};
+    force = {};
+    torque = {};
+  }
+
   Vector3 GetLinearVelocity() const { return linearVelocity; }
   std::optional<float> &GetMaxLinearVelocity() { return maxLinearVelocity; }
 

@@ -22,6 +22,8 @@ public:
 
   void SetObjA(Obj a) { objectA = a; }
   void SetObjB(Obj b) { objectB = b; }
+
+  float GetDistance() const { return distance; }
   void SetDistance(float d) { distance = d; }
 
 protected:

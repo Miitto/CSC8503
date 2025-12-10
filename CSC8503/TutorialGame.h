@@ -31,6 +31,8 @@ public:
   void InitWorld();
   void InitCollisionTest();
 
+  virtual void EndLevel() = 0;
+
   Player *SpawnPlayer(int id);
 
   void SetActive(bool state) { active = state; }
@@ -78,6 +80,9 @@ protected:
                                 Quaternion orientation,
                                 float inverseMass = 10.0f);
 
+  GameObject *AddLevelEndToWorld(const NCL::Maths::Vector3 &position,
+                                 const NCL::Maths::Vector3 &dimensions);
+
   void AddNavigationGridToWorld(const NavigationGrid &grid);
 
   StateGameObject *AddStateObjectToWorld(const NCL::Maths::Vector3 &position);
@@ -112,6 +117,7 @@ protected:
   Rendering::Texture *defaultTex = nullptr;
   Rendering::Texture *checkerTex = nullptr;
   Rendering::Texture *glassTex = nullptr;
+  Rendering::Texture *paleGreenTex = nullptr;
 
   // Coursework Meshes
   Rendering::Mesh *playerMesh = nullptr;

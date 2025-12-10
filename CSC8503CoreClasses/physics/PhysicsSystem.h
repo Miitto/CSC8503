@@ -21,7 +21,6 @@ public:
   Vector3 &GetGravity() { return gravity; }
 
 protected:
-  void BasicCollisionDetection();
   void BroadPhase();
   void NarrowPhase();
 

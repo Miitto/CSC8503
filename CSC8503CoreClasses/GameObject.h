@@ -1,4 +1,5 @@
 #pragma once
+#include "Bitflag.h"
 #include "Transform.h"
 #include "collisions/CollisionVolume.h"
 #include "macros.h"
@@ -13,8 +14,10 @@ class PhysicsObject;
 class GameObject {
 public:
   enum Tag {
-    Player = BIT(1),
-    Inactive = BIT(2),
+    Player = BIT(0),
+    Pane = BIT(1),
+    Enemy = BIT(2),
+    Inactive = BIT(3),
   };
 
   enum Layer {
@@ -26,15 +29,15 @@ public:
 
   void SetBoundingVolume(CollisionVolume *vol) { boundingVolume = vol; }
 
+  bool IsActive() const { return !tags.has(Tag::Inactive); }
+
   const CollisionVolume *GetBoundingVolume() const { return boundingVolume; }
 
-  bool IsActive() const { return !(tags & Tag::Inactive); }
+  const Bitflag<Tag> &GetTags() const { return tags; }
+  Bitflag<Tag> &GetTags() { return tags; }
 
-  const Tag &GetTags() const { return tags; }
-  Tag &GetTags() { return tags; }
-
-  const Layer &GetLayers() const { return layers; }
-  Layer &GetLayers() { return layers; }
+  const Bitflag<Layer> &GetLayers() const { return layers; }
+  Bitflag<Layer> &GetLayers() { return layers; }
 
   Transform &GetTransform() { return transform; }
   const Transform &GetTransform() const { return transform; }
@@ -42,8 +45,7 @@ public:
   void SetResetTransform(const Transform &t) { resetTransform = t; }
   void SetCurrentTransformAsReset() { resetTransform = transform; }
 
-  void Reset() { transform = resetTransform; }
-
+  virtual void Reset();
   RenderObject *GetRenderObject() const { return renderObject; }
 
   PhysicsObject *GetPhysicsObject() const { return physicsObject; }
@@ -83,8 +85,8 @@ protected:
   RenderObject *renderObject;
   NetworkObject *networkObject;
 
-  Tag tags;
-  Layer layers;
+  Bitflag<Tag> tags;
+  Bitflag<Layer> layers;
 
   int worldID;
   std::string name;

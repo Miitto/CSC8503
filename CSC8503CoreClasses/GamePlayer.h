@@ -7,7 +7,7 @@
 namespace NCL::CSC8503 {
 class GamePlayer : public GameObject {
 public:
-  GamePlayer(int id) : id(id) {}
+  GamePlayer(int id) : id(id) { GetTags().set(Tag::Player); }
 
   virtual void Input(float dt, ClientPacket input) = 0;
 

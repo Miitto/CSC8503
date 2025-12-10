@@ -23,6 +23,8 @@ public:
     NCL::CSC8503::NetworkedGame::UpdateGame(dt);
   }
 
+  void EndLevel() override;
+
 protected:
   virtual void NetworkUpdate(float dt) override;
 

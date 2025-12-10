@@ -82,6 +82,7 @@ public:
   void PingCheck(float dt);
 
   void SelectLevel(Level level);
+  void EndLevel() override;
 
   void UpdateGame(float dt) override;
 
@@ -105,6 +106,10 @@ protected:
   std::optional<NCL::CSC8503::ServerCore> serverNet = std::nullopt;
   int ourPlayerId = -1;
   std::vector<int> connectedPlayers;
+
+  Level currentLevel = Level::Default;
+
+  Pane::Corner cornerToAttach = Pane::Corner::FrontLeft;
 
   Vector3 lastPlayerPos = Vector3(0, 0, 0);
 };

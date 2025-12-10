@@ -45,6 +45,8 @@ void ServerGame::StartLevel(Level level) {
   net.OnLevelUpdate(level);
 }
 
+void ServerGame::EndLevel() {}
+
 void ServerGame::ReceivePacket(GamePacketType type, GamePacket *payload,
                                int source) {
   switch (type.type) {

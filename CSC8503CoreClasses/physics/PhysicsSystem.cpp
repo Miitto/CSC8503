@@ -15,7 +15,7 @@ using namespace NCL;
 using namespace CSC8503;
 
 PhysicsSystem::PhysicsSystem(GameWorld &g) : gameWorld(g) {
-  applyGravity = false;
+  applyGravity = true;
   dTOffset = 0.0f;
   globalDamping = 0.995f;
   SetGravity(Vector3(0.0f, -9.8f, 0.0f));
@@ -94,12 +94,8 @@ void PhysicsSystem::Update(float dt) {
   int iteratorCount = 0;
   while (dTOffset > realDT) {
     IntegrateAccel(realDT); // Update accelerations from external forces
-    if (useBroadPhase) {
-      BroadPhase();
-      NarrowPhase();
-    } else {
-      BasicCollisionDetection();
-    }
+    BroadPhase();
+    NarrowPhase();
 
     // This is our simple iterative solver -
     // we just run things multiple times, slowly moving things forward
@@ -189,42 +185,17 @@ void PhysicsSystem::UpdateObjectAABBs() {
 
 /*
 
-This is how we'll be doing collision detection in tutorial 4.
-We step thorugh every pair of objects once (the inner for loop offset
-ensures this), and determine whether they collide, and if so, add them
-to the collision set for later processing. The set will guarantee that
-a particular pair will only be added once, so objects colliding for
-multiple frames won't flood the set with duplicates.
-*/
-void PhysicsSystem::BasicCollisionDetection() {
-  for (auto it = gameWorld.begin(); it != gameWorld.end(); ++it) {
-    if (!(*it)->GetPhysicsObject()) {
-      continue;
-    }
-
-    for (auto jt = std::next(it); jt != gameWorld.end(); ++jt) {
-      if (!(*jt)->GetPhysicsObject()) {
-        continue;
-      }
-
-      CollisionDetection::CollisionInfo cInfo;
-      if (CollisionDetection::ObjectIntersection(*it, *jt, cInfo)) {
-        cInfo.framesLeft = numCollisionFrames;
-        ImpulseResolveCollision(*cInfo.a, *cInfo.b, cInfo.point);
-        allCollisions.insert(cInfo);
-      }
-    }
-  }
-}
-
-/*
-
 In tutorial 5, we start determining the correct response to a collision,
 so that objects separate back out.
 
 */
 void PhysicsSystem::ImpulseResolveCollision(
     GameObject &a, GameObject &b, CollisionDetection::ContactPoint &p) const {
+  if (a.GetBoundingVolume()->isTrigger() ||
+      b.GetBoundingVolume()->isTrigger()) {
+    return;
+  }
+
   auto physA = a.GetPhysicsObject();
   auto physB = b.GetPhysicsObject();
 
@@ -282,6 +253,12 @@ void PhysicsSystem::ProjectionNarrowPhase() {
 void PhysicsSystem::ProjectionResolveCollision(
     GameObject &a, GameObject &b,
     const CollisionDetection::ContactPoint &p) const {
+
+  if (a.GetBoundingVolume()->isTrigger() ||
+      b.GetBoundingVolume()->isTrigger()) {
+    return;
+  }
+
   auto physA = a.GetPhysicsObject();
   auto physB = b.GetPhysicsObject();
   auto &tA = a.GetTransform();
@@ -343,7 +320,11 @@ void PhysicsSystem::NarrowPhase() {
   for (auto cInfo : broadphaseCollisions) {
     if (CollisionDetection::ObjectIntersection(cInfo.a, cInfo.b, cInfo)) {
       cInfo.framesLeft = numCollisionFrames;
-      ImpulseResolveCollision(*cInfo.a, *cInfo.b, cInfo.point);
+      bool aTrigger = cInfo.a->GetBoundingVolume()->isTrigger();
+      bool bTrigger = cInfo.b->GetBoundingVolume()->isTrigger();
+      if (!aTrigger && !bTrigger) {
+        ImpulseResolveCollision(*cInfo.a, *cInfo.b, cInfo.point);
+      }
       allCollisions.insert(cInfo);
     }
   }

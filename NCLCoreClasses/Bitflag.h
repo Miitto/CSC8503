@@ -45,6 +45,11 @@ struct Bitflag {
   constexpr inline bool operator!() const { return flags == 0; }
 
   constexpr explicit inline operator Underlying() const { return flags; }
+  constexpr explicit inline operator T() const { return static_cast<T>(flags); }
+
+  constexpr inline T as_enum() const { return static_cast<T>(flags); }
+
+  constexpr inline Underlying as_underlying() const { return flags; }
 
   constexpr bool inline operator==(Bitflag<T> other) const {
     return flags == other.flags;
