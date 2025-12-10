@@ -62,7 +62,7 @@ public:
     pingInfo = {
         .lastPingSentTime = std::chrono::high_resolution_clock::now(),
         .cb = cb,
-        .packet = std::make_unique<GamePacket>(BasicNetworkMessages::Ping),
+        .packet = std::make_unique<HelloPacket>(-1),
     };
   }
 

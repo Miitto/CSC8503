@@ -29,7 +29,6 @@ void ServerGame::NetworkUpdate(float dt) { net.Update(dt, world); }
 void ServerGame::UpdateMinimumState() { net.UpdateMinimumState(world); }
 
 void ServerGame::StartLevel(Level level) {
-
   switch (level) {
   case Level::Default:
     InitWorld();
@@ -45,7 +44,21 @@ void ServerGame::StartLevel(Level level) {
   net.OnLevelUpdate(level);
 }
 
-void ServerGame::EndLevel() {}
+void ServerGame::EndLevel() {
+  Level nextLevel = Level::Default;
+
+  switch (net.GetCurrentLevel()) {
+  case Level::Default:
+    nextLevel = Level::CollisionTest;
+    break;
+  case Level::CollisionTest:
+    nextLevel = Level::Default;
+    break;
+  }
+
+  StartLevel(nextLevel);
+  net.OnLevelUpdate(nextLevel);
+}
 
 void ServerGame::ReceivePacket(GamePacketType type, GamePacket *payload,
                                int source) {

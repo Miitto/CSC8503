@@ -48,6 +48,7 @@ void ClientGame::SetupPacketHandlers() {
 
 void ClientGame::Disconnect() {
   if (net) {
+    NET_DEBUG("Client sending shutdown");
     net->SendPacket(GamePacket(BasicNetworkMessages::Shutdown));
     net->UpdateClient(); // Need to run an update to send the packet
     net = std::nullopt;
@@ -146,8 +147,10 @@ void ClientGame::EndLevel() {
   }
 
   if (serverNet) {
+    TutorialGame::EndLevel();
     serverNet->OnLevelUpdate(nextLevel);
   } else if (!net) {
+    TutorialGame::EndLevel();
     SelectLevel(nextLevel);
   }
 }
@@ -281,6 +284,7 @@ void ClientGame::ReceivePacket(GamePacketType type, GamePacket *payload,
     break;
   }
   case BasicNetworkMessages::LevelChange: {
+    NET_DEBUG("Received level change from server.");
     auto packet = GamePacket::as<LevelChangePacket>(payload);
     auto level = static_cast<Level>(packet->level);
     NET_INFO("Changing to level {}", level);

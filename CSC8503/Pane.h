@@ -1,8 +1,10 @@
 #pragma once
 
+#include "Debug.h"
 #include "GameObject.h"
 #include "GameWorld.h"
 #include "constraints/OffsetTiedConstraint.h"
+#include "networking/NetworkObject.h"
 
 class Pane : public NCL::CSC8503::GameObject {
 public:
@@ -10,20 +12,38 @@ public:
   Pane(NCL::CSC8503::GameWorld *world, GameObject *player)
       : GameObject("Pane"), world(world), player(player) {
     GetTags().set(Tag::Pane);
+
+    networkObject = new NCL::CSC8503::NetworkObject(*this, -2);
   }
 
   void Update(float dt) override {
     if (GetTransform().GetPosition().y < -50.0f) {
       Reset();
     }
+
+    const NCL::CSC8503::OffsetTiedConstraint *constraints[4] = {
+        ropes.fl.constraint, ropes.fr.constraint, ropes.bl.constraint,
+        ropes.br.constraint};
+
+    const NCL::Maths::Vector4 colors[4] = {
+        NCL::Maths::Vector4(1, 0, 0, 1), NCL::Maths::Vector4(0, 1, 0, 1),
+        NCL::Maths::Vector4(0, 0, 1, 1), NCL::Maths::Vector4(1, 1, 0, 1)};
+
+    for (int i = 0; i < 4; ++i) {
+      const NCL::CSC8503::OffsetTiedConstraint *constraint = constraints[i];
+      if (constraint && constraint->IsActive()) {
+        NCL::Debug::DrawLine(constraint->GetAAttachPos(),
+                             constraint->GetBAttachPos(), colors[i]);
+      }
+    }
   }
 
   void Reset() override {
     GameObject::Reset();
-    constraints.fl->deactivate();
-    constraints.fr->deactivate();
-    constraints.bl->deactivate();
-    constraints.br->deactivate();
+    ropes.fl.constraint->deactivate();
+    ropes.fr.constraint->deactivate();
+    ropes.bl.constraint->deactivate();
+    ropes.br.constraint->deactivate();
   }
 
   void AttachCorner(Corner currentCorner) {
@@ -40,22 +60,8 @@ public:
       auto offset =
           closestCollision.collidedAt - node->GetTransform().GetPosition();
 
-      NCL::CSC8503::OffsetTiedConstraint *toActivate = nullptr;
-      switch (currentCorner) {
-      case Corner::FrontLeft:
-        toActivate = constraints.fl;
-        break;
-      case Corner::FrontRight:
-        toActivate = constraints.fr;
-        break;
-      case Corner::BackLeft:
-        toActivate = constraints.bl;
-        break;
-      case Corner::BackRight:
-        toActivate = constraints.br;
-        break;
-      }
-
+      NCL::CSC8503::OffsetTiedConstraint *toActivate =
+          GetRope(currentCorner).constraint;
       NCL::Maths::Vector3 pos =
           GetTransform().GetPosition() +
           (GetTransform().GetOrientation() * GetCornerOffset(currentCorner));
@@ -70,43 +76,17 @@ public:
   }
 
   void ExtendCorner(Corner currentCorner, float dt) {
-    NCL::CSC8503::OffsetTiedConstraint *toActivate = nullptr;
-    switch (currentCorner) {
-    case Corner::FrontLeft:
-      toActivate = constraints.fl;
-      break;
-    case Corner::FrontRight:
-      toActivate = constraints.fr;
-      break;
-    case Corner::BackLeft:
-      toActivate = constraints.bl;
-      break;
-    case Corner::BackRight:
-      toActivate = constraints.br;
-      break;
-    }
+    NCL::CSC8503::OffsetTiedConstraint *toActivate =
+        GetRope(currentCorner).constraint;
+
     constexpr float extendSpeed = 5.0f;
     float newDist = toActivate->GetDistance() + extendSpeed * dt;
     toActivate->SetDistance(newDist);
   }
 
   void RetractCorner(Corner currentCorner, float dt) {
-    NCL::CSC8503::OffsetTiedConstraint *toDeactivate = nullptr;
-    switch (currentCorner) {
-    case Corner::FrontLeft:
-      toDeactivate = constraints.fl;
-      break;
-    case Corner::FrontRight:
-      toDeactivate = constraints.fr;
-      break;
-    case Corner::BackLeft:
-      toDeactivate = constraints.bl;
-      break;
-    case Corner::BackRight:
-      toDeactivate = constraints.br;
-      break;
-    }
-
+    NCL::CSC8503::OffsetTiedConstraint *toDeactivate =
+        GetRope(currentCorner).constraint;
     constexpr float retractSpeed = 5.0f;
     float newDist = toDeactivate->GetDistance() - retractSpeed * dt;
 
@@ -114,66 +94,69 @@ public:
   }
 
   void DetachCorner(Corner currentCorner) {
-    NCL::CSC8503::OffsetTiedConstraint *toDeactivate = nullptr;
-    switch (currentCorner) {
-    case Corner::FrontLeft:
-      toDeactivate = constraints.fl;
-      break;
-    case Corner::FrontRight:
-      toDeactivate = constraints.fr;
-      break;
-    case Corner::BackLeft:
-      toDeactivate = constraints.bl;
-      break;
-    case Corner::BackRight:
-      toDeactivate = constraints.br;
-      break;
-    }
-    toDeactivate->deactivate();
+    Rope rope = GetRope(currentCorner);
+    rope.constraint->deactivate();
   }
 
   void SetupConstraints(NCL::CSC8503::GameWorld &world) {
     auto scale = GetTransform().GetScale();
 
-    constraints.fl = new NCL::CSC8503::OffsetTiedConstraint(
+    ropes.fl.constraint = new NCL::CSC8503::OffsetTiedConstraint(
         {this, NCL::Maths::Vector3(-scale.x / 2, 0.0f, -scale.z / 2)},
         {nullptr, NCL::Maths::Vector3(-0.5f, 5.0f, -0.5f)}, 0.0f);
 
-    constraints.fr = new NCL::CSC8503::OffsetTiedConstraint(
+    ropes.fr.constraint = new NCL::CSC8503::OffsetTiedConstraint(
         {this, NCL::Maths::Vector3(scale.x / 2, 0.0f, -scale.z / 2)},
         {nullptr, NCL::Maths::Vector3(0.5f, 5.0f, -0.5f)}, 0.0f);
 
-    constraints.bl = new NCL::CSC8503::OffsetTiedConstraint(
+    ropes.bl.constraint = new NCL::CSC8503::OffsetTiedConstraint(
         {this, NCL::Maths::Vector3(-scale.x / 2, 0.0f, scale.z / 2)},
         {nullptr, NCL::Maths::Vector3(-0.5f, 5.0f, 0.5f)}, 0.0f);
 
-    constraints.br = new NCL::CSC8503::OffsetTiedConstraint(
+    ropes.br.constraint = new NCL::CSC8503::OffsetTiedConstraint(
         {this, NCL::Maths::Vector3(scale.x / 2, 0.0f, scale.z / 2)},
         {nullptr, NCL::Maths::Vector3(0.5f, 5.0f, 0.5f)}, 0.0f);
 
-    constraints.fl->deactivate();
-    constraints.fr->deactivate();
-    constraints.bl->deactivate();
-    constraints.br->deactivate();
+    ropes.fl.constraint->deactivate();
+    ropes.fr.constraint->deactivate();
+    ropes.bl.constraint->deactivate();
+    ropes.br.constraint->deactivate();
 
-    world.AddConstraint(constraints.fl);
-    world.AddConstraint(constraints.fr);
-    world.AddConstraint(constraints.bl);
-    world.AddConstraint(constraints.br);
+    world.AddConstraint(ropes.fl.constraint);
+    world.AddConstraint(ropes.fr.constraint);
+    world.AddConstraint(ropes.bl.constraint);
+    world.AddConstraint(ropes.br.constraint);
   }
 
 protected:
   NCL::CSC8503::GameWorld *world;
   GameObject *player;
 
-  struct Constraints {
-    NCL::CSC8503::OffsetTiedConstraint *fl;
-    NCL::CSC8503::OffsetTiedConstraint *fr;
-    NCL::CSC8503::OffsetTiedConstraint *bl;
-    NCL::CSC8503::OffsetTiedConstraint *br;
+  struct Rope {
+    NCL::CSC8503::OffsetTiedConstraint *constraint = nullptr;
   };
 
-  Constraints constraints;
+  struct Ropes {
+    Rope fl = {};
+    Rope fr = {};
+    Rope bl = {};
+    Rope br = {};
+  };
+
+  Ropes ropes;
+
+  Rope GetRope(Corner corner) {
+    switch (corner) {
+    case Corner::FrontLeft:
+      return ropes.fl;
+    case Corner::FrontRight:
+      return ropes.fr;
+    case Corner::BackLeft:
+      return ropes.bl;
+    case Corner::BackRight:
+      return ropes.br;
+    }
+  }
 
   NCL::Maths::Vector3 GetCornerOffset(Corner corner) {
     auto scale = GetTransform().GetScale();

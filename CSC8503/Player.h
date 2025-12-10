@@ -4,6 +4,7 @@
 #include "GamePlayer.h"
 #include "GameWorld.h"
 #include "Pane.h"
+#include "networking/NetworkObject.h"
 
 namespace NCL::CSC8503 {
 class Player : public GamePlayer {
@@ -35,7 +36,9 @@ public:
   using ActionFlags = Bitflag<Actions>;
 
   Player(int id, GameWorld *world, ::Pane *pane, Camera &camera)
-      : GamePlayer(id), world(world), pane(pane), camera(camera) {}
+      : GamePlayer(id), world(world), pane(pane), camera(camera) {
+    networkObject = new NCL::CSC8503::NetworkObject(*this, id);
+  }
 
   void Update(float dt) override;
   void Input(float dt, ClientPacket input) override;

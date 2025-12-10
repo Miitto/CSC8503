@@ -2,6 +2,7 @@
 
 #include "GameObject.h"
 #include "GameWorld.h"
+#include "logging/log.h"
 #include "logging/logger.h"
 #include "networking/GameServer.h"
 #include "networking/NetworkBase.h"
@@ -14,6 +15,7 @@
 namespace NCL::CSC8503 {
 ServerCore::ServerCore(uint16_t port, int maxClients)
     : net(::NCL::CSC8503::GameServer(port, maxClients)) {
+  LOG("Server Core starting on port {}", port);
   net.RegisterPacketHandler(BasicNetworkMessages::Received_State, this);
   net.RegisterPacketHandler(BasicNetworkMessages::Hello, this);
   net.RegisterPacketHandler(BasicNetworkMessages::Shutdown, this);
@@ -81,16 +83,13 @@ void ServerCore::BroadcastSnapshot(bool deltaFrame,
     if (!o) {
       continue;
     }
-    // TODO - you'll need some way of determining
-    // when a player has sent the server an acknowledgement
-    // and store the lastID somewhere. A map between player
-    // and an int could work, or it could be part of a
-    // NetworkPlayer struct.
-    int playerState = 0;
+
     GamePacket *newPacket = nullptr;
-    if (o->WritePacket(&newPacket, deltaFrame, playerState)) {
-      net.SendGlobalPacket(*newPacket);
-      delete newPacket;
+    for (auto &player : clients) {
+      if (o->WritePacket(&newPacket, deltaFrame,
+                         player.second.lastReceivedStateID)) {
+        net.SendPacketToClient(player.first, *newPacket);
+      }
     }
   }
 }

@@ -11,7 +11,7 @@ public:
     GameObject *object;
     NCL::Maths::Vector3 offset;
 
-    NCL::Maths::Vector3 GetOffsetPos();
+    NCL::Maths::Vector3 GetOffsetPos() const;
   };
 
   OffsetTiedConstraint(Obj a, Obj b, float d)
@@ -25,6 +25,9 @@ public:
 
   float GetDistance() const { return distance; }
   void SetDistance(float d) { distance = d; }
+
+  NCL::Maths::Vector3 GetAAttachPos() const { return objectA.GetOffsetPos(); }
+  NCL::Maths::Vector3 GetBAttachPos() const { return objectB.GetOffsetPos(); }
 
 protected:
   Obj objectA;

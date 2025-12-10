@@ -8,7 +8,7 @@ using namespace NCL;
 using namespace Maths;
 using namespace CSC8503;
 
-Vector3 OffsetTiedConstraint::Obj::GetOffsetPos() {
+Vector3 OffsetTiedConstraint::Obj::GetOffsetPos() const {
   auto pos = object->GetTransform().GetPosition();
   auto rot = object->GetTransform().GetOrientation();
 

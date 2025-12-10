@@ -27,11 +27,11 @@ public:
 
   virtual void UpdateGame(float dt);
 
+  void RequestEndLevel() { shouldEndLevel = true; }
+
   void Clear();
   void InitWorld();
   void InitCollisionTest();
-
-  virtual void EndLevel() = 0;
 
   Player *SpawnPlayer(int id);
 
@@ -41,6 +41,7 @@ public:
 
 protected:
   void InitCamera();
+  virtual void EndLevel();
 
   /*
   These are some of the world/object creation functions I created when testing
@@ -58,10 +59,6 @@ protected:
   void BridgeConstraintTest();
 
   void DebugUi();
-
-  bool SelectObject();
-  void MoveSelectedObject();
-  void DebugObjectMovement();
 
   GameObject *AddFloorToWorld(const NCL::Maths::Vector3 &position);
   GameObject *AddSphereToWorld(const NCL::Maths::Vector3 &position,
@@ -104,11 +101,8 @@ protected:
   Controller *controller;
 
   bool useGravity;
-  bool inSelectionMode;
-
-  float forceMagnitude;
-
-  GameObject *selectionObject = nullptr;
+  bool freeCursor;
+  bool shouldEndLevel = false;
 
   Rendering::Mesh *capsuleMesh = nullptr;
   Rendering::Mesh *cubeMesh = nullptr;
@@ -118,6 +112,7 @@ protected:
   Rendering::Texture *checkerTex = nullptr;
   Rendering::Texture *glassTex = nullptr;
   Rendering::Texture *paleGreenTex = nullptr;
+  Rendering::Texture *crosshairTex = nullptr;
 
   // Coursework Meshes
   Rendering::Mesh *playerMesh = nullptr;
@@ -132,8 +127,6 @@ protected:
   // Coursework Additional functionality
   Pane *pane;
   Player *player;
-
-  GameObject *objClosest = nullptr;
 };
 } // namespace CSC8503
 } // namespace NCL

@@ -47,7 +47,7 @@ using namespace CSC8503;
 
 #pragma region Test Functions
 
-#define RUN_TESTS 1
+#define RUN_TESTS 0
 
 namespace {
 void TestStateMachine() {
@@ -249,7 +249,7 @@ void TestNetworking() {
   TestPacketReceiver serverReceiver("Server");
   TestPacketReceiver clientReceiver("Client");
 
-  constexpr uint16_t port = NetworkBase::GetDefaultPort();
+  constexpr uint16_t port = 57890;
 
   GameServer *server = new GameServer(port, 1);
   GameClient *client = new GameClient();

@@ -3,6 +3,7 @@
 #include "LevelEnd.h"
 #include "RenderObject.h"
 #include "TextureLoader.h"
+#include "gui.h"
 #include "physics/PhysicsObject.h"
 #include "physics/PhysicsSystem.h"
 
@@ -36,10 +37,8 @@ TutorialGame::TutorialGame(GameWorld &inWorld,
                            GameTechRendererInterface &inRenderer,
                            PhysicsSystem &inPhysics)
     : world(inWorld), renderer(inRenderer), physics(inPhysics) {
-
-  forceMagnitude = 10.0f;
-  useGravity = false;
-  inSelectionMode = false;
+  useGravity = true;
+  freeCursor = false;
 
   controller = new KeyboardMouseController(*Window::GetWindow()->GetKeyboard(),
                                            *Window::GetWindow()->GetMouse());
@@ -70,6 +69,7 @@ TutorialGame::TutorialGame(GameWorld &inWorld,
   checkerTex = renderer.LoadTexture("checkerboard.png");
   glassTex = renderer.LoadTexture("stainedglass.tga");
   paleGreenTex = renderer.LoadTexture("PaleGreen.png");
+  crosshairTex = renderer.LoadTexture("Crosshair.png");
 
   checkerMaterial.type = MaterialType::Opaque;
   checkerMaterial.diffuseTex = checkerTex;
@@ -82,20 +82,36 @@ TutorialGame::TutorialGame(GameWorld &inWorld,
 
 TutorialGame::~TutorialGame() {}
 
+void TutorialGame::EndLevel() { Clear(); }
+
 void TutorialGame::UpdateGame(float dt) {
   if (!active)
     return;
 
-  if (updateCamera && !inSelectionMode) {
+  if (shouldEndLevel) {
+    EndLevel();
+    shouldEndLevel = false;
+  }
+
+  if (updateCamera && !freeCursor) {
     world.GetMainCamera().UpdateCamera(dt);
   }
 
-  // This year we can draw debug textures as well!
-  Debug::DrawTex(*defaultTex, Vector2(10, 10), Vector2(5, 5), Debug::WHITE);
-  Debug::DrawLine(Vector3(), Vector3(0, 100, 0), Vector4(1, 0, 0, 1));
+  if (Window::GetKeyboard()->KeyPressed(KeyCodes::Q)) {
+    freeCursor = !freeCursor;
+    if (freeCursor) {
+      Window::GetWindow()->ShowOSPointer(true);
+      Window::GetWindow()->LockMouseToWindow(false);
+    } else {
+      Window::GetWindow()->ShowOSPointer(false);
+      Window::GetWindow()->LockMouseToWindow(true);
+    }
+  }
 
-  SelectObject();
-  MoveSelectedObject();
+  Debug::DrawTex(*crosshairTex, Vector2(50, 50), Vector2(1, 1));
+  Debug::Print(
+      fmt::format("Press Q to {} the cursor", freeCursor ? "lock" : "free"),
+      Vector2(2, 95));
 
   DebugUi();
 
@@ -105,56 +121,20 @@ void TutorialGame::UpdateGame(float dt) {
 void TutorialGame::DebugUi() {
   if (!showUi)
     return;
-  ImGui::Begin("Tutorial Game Debug");
-  if (ImGui::Checkbox("Use (G)ravity", &useGravity))
-    physics.UseGravity(useGravity);
+  {
+    auto frame = NCL::gui::Frame("Tutorial Game Debug");
+    if (ImGui::Checkbox("Use Gravity", &useGravity))
+      physics.UseGravity(useGravity);
 
-  if (useGravity) {
-    ImGui::InputFloat3("Gravity", &physics.GetGravity().x);
+    if (useGravity) {
+      ImGui::InputFloat3("Gravity", &physics.GetGravity().x);
+    }
   }
 
-  ImGui::End();
-
-  if (selectionObject) {
-    ImGui::Begin("Selected Object");
-    Vector3 pos = selectionObject->GetTransform().GetPosition();
-    if (ImGui::InputFloat3("P", &pos.x)) {
-      selectionObject->GetTransform().SetPosition(pos);
-      selectionObject->GetPhysicsObject()->SetLinearVelocity(Vector3());
-      selectionObject->GetPhysicsObject()->SetAngularVelocity(Vector3());
-    }
-    Vector3 vel = selectionObject->GetPhysicsObject()->GetLinearVelocity();
-    if (ImGui::InputFloat3("V", &vel.x)) {
-      selectionObject->GetPhysicsObject()->SetLinearVelocity(vel);
-    }
-    Vector3 angVel = selectionObject->GetPhysicsObject()->GetAngularVelocity();
-    if (ImGui::InputFloat3("W", &angVel.x)) {
-      selectionObject->GetPhysicsObject()->SetAngularVelocity(angVel);
-    }
-    ImGui::Text("Inv Mass: %.3f",
-                selectionObject->GetPhysicsObject()->GetInverseMass());
-
-    constexpr const char *const colliderNames[] = {"PlayerState", "Sphere ",
-                                                   "AABB", "OBB", "Capsule"};
-    int idx = 0;
-    switch (selectionObject->GetBoundingVolume()->type) {
-    case VolumeType::Sphere:
-      idx = 1;
-      break;
-    case VolumeType::AABB:
-      idx = 2;
-      break;
-    case VolumeType::OBB:
-      idx = 3;
-      break;
-    case VolumeType::Capsule:
-      idx = 4;
-      break;
-    }
-
-    ImGui::Text("Collider: %s", colliderNames[idx]);
-
-    ImGui::End();
+  {
+    auto frame = NCL::gui::Frame("Camera");
+    auto pos = world.GetMainCamera().GetPosition();
+    frame.text("Camera Position: (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
   }
 }
 
@@ -170,9 +150,8 @@ void TutorialGame::Clear() {
   world.ClearAndErase();
   physics.Clear();
 
-  selectionObject = nullptr;
-  objClosest = nullptr;
   pane = nullptr;
+  player = nullptr;
 }
 
 void TutorialGame::InitWorld() {
@@ -681,142 +660,3 @@ void TutorialGame::BridgeConstraintTest() {
   world.AddConstraint(constraint);
 }
 #pragma endregion
-
-/*
-Every frame, this code will let you perform a raycast, to see if there's
-an object underneath the cursor, and if so 'select it' into a pointer, so
-that it can be manipulated later. Pressing Q will let you toggle between
-this behaviour and instead letting you move the camera around.
-
-*/
-bool TutorialGame::SelectObject() {
-  if (Window::GetKeyboard()->KeyPressed(KeyCodes::Q)) {
-    inSelectionMode = !inSelectionMode;
-    if (inSelectionMode) {
-      Window::GetWindow()->ShowOSPointer(true);
-      Window::GetWindow()->LockMouseToWindow(false);
-    } else {
-      Window::GetWindow()->ShowOSPointer(false);
-      Window::GetWindow()->LockMouseToWindow(true);
-    }
-  }
-
-  Debug::Print(
-      "Camera Pos:" + std::to_string(world.GetMainCamera().GetPosition().x) +
-          "," + std::to_string(world.GetMainCamera().GetPosition().y) + "," +
-          std::to_string(world.GetMainCamera().GetPosition().z),
-      Vector2(5, 5), Debug::WHITE);
-
-  if (inSelectionMode) {
-    Debug::Print("Press Q to change to camera mode!", Vector2(5, 85));
-
-    if (Window::GetMouse()->ButtonDown(NCL::MouseButtons::Left)) {
-      if (selectionObject) { // set colour to deselected;
-        selectionObject->GetRenderObject()->SetColour(Vector4(1, 1, 1, 1));
-        selectionObject = nullptr;
-      }
-
-      Ray ray = CollisionDetection::BuildRayFromMouse(world.GetMainCamera());
-
-      RayCollision closestCollision;
-      if (world.Raycast(ray, closestCollision, std::nullopt, player)) {
-        selectionObject = (GameObject *)closestCollision.node;
-
-        selectionObject->GetRenderObject()->SetColour(Vector4(0, 1, 0, 1));
-        return true;
-      } else {
-        return false;
-      }
-    }
-  } else {
-    Debug::Print("Press Q to change to select mode!", Vector2(5, 85));
-  }
-  return false;
-}
-
-/*
-If an object has been clicked, it can be pushed with the right mouse
-button, by an amount determined by the scroll wheel. In the first tutorial
-this won't do anything, as we haven't added linear motion into our physics
-system. After the second tutorial, objects will move in a straight line -
-after the third, they'll be able to twist under torque aswell.
-*/
-
-void TutorialGame::MoveSelectedObject() {
-  Debug::Print("Click Force:" + std::to_string(forceMagnitude), Vector2(5, 90));
-  forceMagnitude += Window::GetMouse()->GetWheelMovement() * 100.0f;
-
-  if (!selectionObject) {
-    return; // we haven't selected anything!
-  }
-
-  // Push the selected object!
-  if (Window::GetMouse()->ButtonPressed(NCL::MouseButtons::Right)) {
-    Ray ray = CollisionDetection::BuildRayFromMouse(world.GetMainCamera());
-
-    RayCollision closestCollision;
-    if (world.Raycast(ray, closestCollision, std::nullopt)) {
-      if (closestCollision.node == selectionObject) {
-        selectionObject->GetPhysicsObject()->AddForceAtPosition(
-            ray.GetDirection() * forceMagnitude, closestCollision.collidedAt);
-      }
-    }
-  }
-
-  auto pitch = world.GetMainCamera().GetPitch();
-  auto roll = world.GetMainCamera().GetYaw();
-
-  Quaternion q;
-
-  if (Window::GetKeyboard()->KeyDown(KeyCodes::LEFT)) {
-    selectionObject->GetPhysicsObject()->AddForce(Vector3(-10, 0, 0));
-  }
-  if (Window::GetKeyboard()->KeyDown(KeyCodes::RIGHT)) {
-    selectionObject->GetPhysicsObject()->AddForce(Vector3(10, 0, 0));
-  }
-  if (Window::GetKeyboard()->KeyDown(KeyCodes::UP)) {
-    selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 10, 0));
-  }
-  if (Window::GetKeyboard()->KeyDown(KeyCodes::DOWN)) {
-    selectionObject->GetPhysicsObject()->AddForce(Vector3(0, -10, 0));
-  }
-}
-
-void TutorialGame::DebugObjectMovement() {
-  // If we've selected an object, we can manipulate it with some key
-  // presses
-  if (inSelectionMode && selectionObject) {
-    // Twist the selected object!
-    if (Window::GetKeyboard()->KeyDown(KeyCodes::LEFT)) {
-      selectionObject->GetPhysicsObject()->AddTorque(Vector3(-10, 0, 0));
-    }
-
-    if (Window::GetKeyboard()->KeyDown(KeyCodes::RIGHT)) {
-      selectionObject->GetPhysicsObject()->AddTorque(Vector3(10, 0, 0));
-    }
-
-    if (Window::GetKeyboard()->KeyDown(KeyCodes::NUM7)) {
-      selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, 10, 0));
-    }
-
-    if (Window::GetKeyboard()->KeyDown(KeyCodes::NUM8)) {
-      selectionObject->GetPhysicsObject()->AddTorque(Vector3(0, -10, 0));
-    }
-
-    if (Window::GetKeyboard()->KeyDown(KeyCodes::RIGHT)) {
-      selectionObject->GetPhysicsObject()->AddTorque(Vector3(10, 0, 0));
-    }
-
-    if (Window::GetKeyboard()->KeyDown(KeyCodes::UP)) {
-      selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, -10));
-    }
-
-    if (Window::GetKeyboard()->KeyDown(KeyCodes::DOWN)) {
-      selectionObject->GetPhysicsObject()->AddForce(Vector3(0, 0, 10));
-    }
-
-    if (Window::GetKeyboard()->KeyDown(KeyCodes::NUM5)) {
-      selectionObject->GetPhysicsObject()->AddForce(Vector3(0, -10, 0));
-    }
-  }
-}

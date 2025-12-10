@@ -107,6 +107,8 @@ public:
 
   void OnLevelUpdate(Level level);
 
+  Level &GetCurrentLevel() { return currentLevel; }
+
 protected:
   const int PACKETS_PER_SNAPSHOT = 5;
   const int SNAPSHOTS_PER_STATEUPDATE = 5;

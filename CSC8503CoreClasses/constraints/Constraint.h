@@ -9,6 +9,7 @@ public:
 
   virtual void UpdateConstraint(float dt) = 0;
 
+  bool IsActive() const { return active; }
   void SetActive(bool state) { active = state; }
   void activate() { active = true; }
   void deactivate() { active = false; }

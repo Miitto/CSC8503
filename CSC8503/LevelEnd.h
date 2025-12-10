@@ -15,7 +15,7 @@ public:
     DEBUG("LevelEnd collided with " + otherObject->GetName());
     if (otherObject->GetTags().has(Tag::Pane)) {
       LOG("Ending Level");
-      game.EndLevel();
+      game.RequestEndLevel();
     }
   }
 
