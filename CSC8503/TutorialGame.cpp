@@ -53,7 +53,7 @@ TutorialGame::TutorialGame(GameWorld &inWorld,
   bonusMesh = renderer.LoadMesh("19463_Kitten_Head_v1.msh");
   capsuleMesh = renderer.LoadMesh("capsule.msh");
 
-  defaultTex = renderer.LoadTexture("Default.png");
+  defaultTex = renderer.LoadTexture("One.png");
   checkerTex = renderer.LoadTexture("checkerboard.png");
   glassTex = renderer.LoadTexture("stainedglass.tga");
   paleGreenTex = renderer.LoadTexture("PaleGreen.png");
@@ -138,7 +138,7 @@ void TutorialGame::Clear() {
   world.SetMainCamera(nullptr);
 }
 
-void TutorialGame::InitWorld() {
+void TutorialGame::InitLvlOne() {
   Clear();
 
   pane = AddPaneToWorld(Vector3(10, 5, 0), Vector2(4, 2), .5f);
@@ -170,53 +170,41 @@ void TutorialGame::InitWorld() {
   }
 
   AddLevelEndToWorld(Vector3(84, 5, 0), Vector3(5, 5, 5));
+
+  GameObject *pendulumAttachment =
+      AddCubeToWorld({42, 50, -18}, {5, 2, 5}, 0.0f);
+  GameObject *pendulum = AddSphereToWorld({42, 50, -70}, 5.0f, 0.0001f);
+  pendulum->GetPhysicsObject()->GetMaterial().SetLinearDamping(0);
+  pendulum->GetPhysicsObject()->SetAxisLocks(PhysicsObject::AxisLock::LinearX);
+  world.AddConstraint(new TiedConstraint(pendulumAttachment, pendulum, 44));
 }
 
-void TutorialGame::InitCollisionTest() {
+void TutorialGame::InitLvlTwo() {
   Clear();
 
-  auto addSet = [this](float o) {
-    AddSphereToWorld(Vector3(o, 5, 0), 1.0f, 10.0f);
-    AddCubeToWorld(Vector3(o, 5, 5), Vector3(1, 1, 1), 10.0f);
-    AddOBBToWorld(Vector3(o, 5, 10), Vector3(1, 1, 1), {}, 10.0f);
-    AddOBBToWorld(Vector3(o, 5, 15), Vector3(1, 1, 1),
-                  Quaternion::EulerAnglesToQuaternion(0, 45, 0), 10.0f);
-    AddCapsuleToWorld(Vector3(o, 5, 20), 0.5f, 0.5f, {}, 10.0f);
-    AddCapsuleToWorld(Vector3(o, 5, 25), 0.5f, 0.5f,
-                      Quaternion::EulerAnglesToQuaternion(0, 0, 90), 10.0f);
-  };
+  AddFloorToWorld(Vector3(0, -5, 0));
+  AddFloorToWorld(Vector3(0, 10, 0));
 
-  for (int i = 0; i < 6; ++i) {
-    AddSphereToWorld(Vector3(0, 0, i * 5), 1.0f, 0.0f);
-  }
-  addSet(0);
+  NavigationGrid grid("lvl2.txt", {-50, -5.5, -90});
+  AddNavigationGridToWorld(grid);
+  world.pathfind().add(std::move(grid));
 
-  for (int i = 0; i < 6; ++i) {
-    AddCubeToWorld(Vector3(5, 0, i * 5), Vector3(1, 1, 1), 0.0f);
-  }
-  addSet(5);
+  pane = AddPaneToWorld(Vector3(0, 3.5, -12), Vector2(4, 2), .5f);
+  pane->SetupConstraints(world);
 
-  for (int i = 0; i < 6; ++i) {
-    AddOBBToWorld(Vector3(10, 0, i * 5), Vector3(1, 1, 1), {}, 0.0f);
-  }
-  addSet(10);
+  AddLevelEndToWorld(Vector3(-35, 2, -80), Vector3(5, 5, 5));
 
-  for (int i = 0; i < 6; ++i) {
-    AddOBBToWorld(Vector3(15, 0, i * 5), Vector3(1, 1, 1),
-                  Quaternion::EulerAnglesToQuaternion(0, 45, 0), 0.0f);
+  {
+    Enemy *e = AddEnemyToWorld({32.5, 0, -67.5}, 500);
+    e->AddPatrolPoint({32.5, 0, -67.5});
+    e->AddPatrolPoint({-37.5, 0, -22.5});
   }
-  addSet(15);
 
-  for (int i = 0; i < 6; ++i) {
-    AddCapsuleToWorld(Vector3(20, 0, i * 5), 0.5f, 0.5f, {}, 0.0f);
+  {
+    Enemy *e = AddEnemyToWorld({17.5, 0, -37.5}, 501);
+    e->AddPatrolPoint({17.5, 0, -37.5});
+    e->AddPatrolPoint({-2.5, 0, -47.5});
   }
-  addSet(20);
-
-  for (int i = 0; i < 6; ++i) {
-    AddCapsuleToWorld(Vector3(25, 0, i * 5), 0.5f, 0.5f,
-                      Quaternion::EulerAnglesToQuaternion(0, 0, 90), 0.0f);
-  }
-  addSet(25);
 }
 
 Player *TutorialGame::SpawnPlayer(int id) {
@@ -389,7 +377,7 @@ Player *TutorialGame::AddPlayerToWorld(const Vector3 &position, int id) {
   float inverseMass = 0.5f;
 
   auto character = new Player(id, &world, pane);
-  auto volume = new SphereVolume(1.0f * meshSize);
+  auto volume = new SphereVolume(0.75f * meshSize);
 
   character->SetBoundingVolume(volume);
 
@@ -415,13 +403,13 @@ Player *TutorialGame::AddPlayerToWorld(const Vector3 &position, int id) {
   return character;
 }
 
-GameObject *TutorialGame::AddEnemyToWorld(const Vector3 &position) {
-  float meshSize = 3.0f;
-  float inverseMass = 0.5f;
+Enemy *TutorialGame::AddEnemyToWorld(const Vector3 &position, int id) {
+  float meshSize = 2.0f;
+  float inverseMass = 5.f;
 
-  Enemy *character = new Enemy(world);
+  Enemy *character = new Enemy(world, id);
 
-  CapsuleVolume *volume = new CapsuleVolume(0.5f * meshSize, 0.5f * meshSize);
+  SphereVolume *volume = new SphereVolume(0.1f * meshSize);
   character->SetBoundingVolume(volume);
 
   character->GetTransform()
@@ -435,6 +423,7 @@ GameObject *TutorialGame::AddEnemyToWorld(const Vector3 &position) {
 
   character->GetPhysicsObject()->SetInverseMass(inverseMass);
   character->GetPhysicsObject()->InitSphereInertia();
+  character->GetPhysicsObject()->GetMaterial().SetLinearDamping(5.f);
 
   character->SetCurrentTransformAsReset();
 
@@ -467,7 +456,8 @@ GameObject *TutorialGame::AddBonusToWorld(const Vector3 &position) {
 Pane *TutorialGame::AddPaneToWorld(const Vector3 &position,
                                    const Vector2 &dimensions, float invMass) {
   Pane *pane = new Pane(&world, player);
-  auto *volume = new OBBVolume(Vector3(dimensions.x, 0.1f, dimensions.y));
+  auto *volume =
+      new OBBVolume(Vector3(dimensions.x * 0.5f, 0.1f, dimensions.y * 0.5f));
   pane->SetBoundingVolume(volume);
   pane->GetTransform()
       .SetScale(Vector3(dimensions.x, 0.1f, dimensions.y))
@@ -481,6 +471,9 @@ Pane *TutorialGame::AddPaneToWorld(const Vector3 &position,
       new PhysicsObject(pane->GetTransform(), pane->GetBoundingVolume()));
   pane->GetPhysicsObject()->SetInverseMass(invMass);
   pane->GetPhysicsObject()->InitCubeInertia();
+  pane->GetPhysicsObject()->SetAxisLocks(PhysicsObject::AxisLock::LinearX |
+                                         PhysicsObject::AxisLock::LinearY |
+                                         PhysicsObject::AxisLock::LinearZ);
 
   pane->SetCurrentTransformAsReset();
 
@@ -521,7 +514,7 @@ void TutorialGame::AddNavigationGridToWorld(const NavigationGrid &grid) {
     for (uint64_t x = 0; x < grid.GetWidth(); ++x) {
       for (uint64_t y = 0; y < maxY; ++y) {
         if (!grid.isNodeWalkable(y, x)) {
-          columns[x] |= (1 << y);
+          columns[x] |= (static_cast<unsigned long long>(1u) << y);
         }
       }
     }
@@ -570,15 +563,17 @@ void TutorialGame::AddNavigationGridToWorld(const NavigationGrid &grid) {
         }
 
         if (w > 0 && h > 0) {
-          float xPos = grid.GetOrigin().x + row * grid.GetNodeSize();
+          float xPos = grid.GetOrigin().z + row * grid.GetNodeSize();
           float yPos = grid.GetOrigin().y;
           float zPos =
-              grid.GetOrigin().z + (chunk * 64 + y) * grid.GetNodeSize();
-          float width = static_cast<float>(w * grid.GetNodeSize()) * .5f;
-          float height = static_cast<float>(h * grid.GetNodeSize()) * .5f;
-          Vector3 pos(zPos + height, yPos + (grid.GetNodeSize() * .5f),
-                      xPos + width);
-          AddCubeToWorld(pos, {height, grid.GetNodeSize() * .5f, width}, 0.f);
+              grid.GetOrigin().x + (chunk * 64 + y) * grid.GetNodeSize();
+          float width = static_cast<float>(w * grid.GetNodeSize());
+          float height = static_cast<float>(h * grid.GetNodeSize());
+          Vector3 pos(zPos + height * 0.5f, yPos + (grid.GetNodeSize()),
+                      xPos + width * 0.5f);
+          AddCubeToWorld(
+              pos, {height, static_cast<float>(grid.GetNodeSize()), width},
+              0.f);
         }
         y += h;
       }

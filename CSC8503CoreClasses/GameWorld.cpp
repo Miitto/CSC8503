@@ -93,9 +93,9 @@ void GameWorld::UpdateWorld(float dt) {
   }
 }
 
-bool GameWorld::Raycast(Ray &r, RayCollision &collision,
-                        std::optional<float> maxDist,
-                        const GameObject *const ignoreThis) const {
+bool GameWorld::Raycast(
+    Ray &r, RayCollision &collision, std::optional<float> maxDist,
+    const std::span<const GameObject *const> ignoreThis) const {
   auto distanceCheck = [&](const RayCollision &c) {
     if (maxDist.has_value()) {
       return c.rayDistance <= maxDist.value();
@@ -111,29 +111,34 @@ bool GameWorld::Raycast(Ray &r, RayCollision &collision,
     if (!i->GetBoundingVolume()) { // objects might not be collideable etc...
       continue;
     }
-    if (i == ignoreThis) {
-      continue;
+
+    for (auto &obj : ignoreThis) {
+      if (i == obj)
+        goto next;
     }
 
-    // Distance pre check
-    Vector3 objPos = i->GetTransform().GetPosition();
-    Vector3 rel = objPos - rayPos;
-    float maxExtent = i->GetBoundingVolume()->GetMaxExtent();
-    float distSqToObj =
-        Vector::Dot(rel, rel) +
-        (maxExtent * maxExtent); // Take into account max extent.
-    if (distSqToObj > maxDistSq) {
-      continue;
-    }
+    {
+      // Distance pre check
+      Vector3 objPos = i->GetTransform().GetPosition();
+      Vector3 rel = objPos - rayPos;
+      float maxExtent = i->GetBoundingVolume()->GetMaxExtent();
+      float distSqToObj =
+          Vector::Dot(rel, rel) +
+          (maxExtent * maxExtent); // Take into account max extent.
+      if (distSqToObj > maxDistSq) {
+        continue;
+      }
 
-    RayCollision thisCollision;
-    if (CollisionDetection::RayIntersection(r, *i, thisCollision)) {
-      if (thisCollision.rayDistance < collision.rayDistance &&
-          distanceCheck(thisCollision)) {
-        thisCollision.node = i;
-        collision = thisCollision;
+      RayCollision thisCollision;
+      if (CollisionDetection::RayIntersection(r, *i, thisCollision)) {
+        if (thisCollision.rayDistance < collision.rayDistance &&
+            distanceCheck(thisCollision)) {
+          thisCollision.node = i;
+          collision = thisCollision;
+        }
       }
     }
+  next:;
   }
   if (collision.node) {
     return true;

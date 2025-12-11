@@ -10,7 +10,7 @@
 namespace NCL::CSC8503 {
 class Enemy : public GameObject {
 public:
-  Enemy(const GameWorld &world, const std::string name = "Enemy",
+  Enemy(const GameWorld &world, int id, const std::string name = "Enemy",
         float viewDist = 100);
 
   void Update(float dt) override;
@@ -24,7 +24,7 @@ protected:
   void InitializeBehaviours();
 
   void CheckNavRequest();
-  bool NavigateTo(const Vector3 &targetPos);
+  bool NavigateTo(float dt, const Vector3 &targetPos);
 
   void UpdateToClosestPatrolPoint();
 
@@ -45,7 +45,7 @@ protected:
   float viewDistance;
   float reach = 2.0f;
   float viewAngle = 45.0f;
-  float speed = 10.0f;
+  float speed = 100.0f;
 
   float timeSinceSeenPlayer = 0.0f;
   Vector3 lastSeenPlayerPos;

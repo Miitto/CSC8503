@@ -3,9 +3,11 @@
 #include "Camera.h"
 #include "Debug.h"
 #include "GameObject.h"
+#include "GamePlayer.h"
 #include "GameWorld.h"
 #include "constraints/OffsetTiedConstraint.h"
 #include "networking/NetworkObject.h"
+#include "physics/PhysicsObject.h"
 
 class Pane : public NCL::CSC8503::GameObject {
 public:
@@ -34,9 +36,36 @@ public:
     for (int i = 0; i < 4; ++i) {
       const NCL::CSC8503::OffsetTiedConstraint *constraint = constraints[i];
       if (constraint && constraint->IsActive()) {
-        NCL::Debug::DrawLine(constraint->GetAAttachPos(),
-                             constraint->GetBAttachPos(), colors[i]);
+        Vector4 color = colors[i];
+
+        float constraintDistance = constraints[i]->GetDistance();
+        Vector3 aPos = constraints[i]->GetAAttachPos();
+        Vector3 bPos = constraints[i]->GetBAttachPos();
+
+        Vector3 dir = bPos - aPos;
+        float distSq = NCL::Maths::Vector::Dot(dir, dir);
+        float constraintDistSq = constraintDistance * constraintDistance;
+
+        float percent = distSq / constraintDistSq;
+
+        color.w *= std::clamp(percent, 0.0f, 1.0f);
+
+        NCL::Debug::DrawLine(aPos, bPos, color);
       }
+    }
+  }
+
+  void OnCollisionBegin(NCL::CSC8503::GameObject *otherObject) override {
+    Vector3 relativeVel = otherObject->GetPhysicsObject()->GetLinearVelocity() -
+                          GetPhysicsObject()->GetLinearVelocity();
+
+    constexpr float collisionThreshold = 25.0f;
+
+    float mag = Vector::Dot(relativeVel, relativeVel);
+
+    if (otherObject->GetPhysicsObject()->GetInverseMass() == 0.f &&
+        mag > collisionThreshold) {
+      Reset();
     }
   }
 
@@ -46,16 +75,30 @@ public:
     ropes.fr.constraint->deactivate();
     ropes.bl.constraint->deactivate();
     ropes.br.constraint->deactivate();
+
+    GetPhysicsObject()->SetAxisLocks(
+        NCL::CSC8503::PhysicsObject::AxisLock::LinearX |
+        NCL::CSC8503::PhysicsObject::AxisLock::LinearY |
+        NCL::CSC8503::PhysicsObject::AxisLock::LinearZ);
   }
 
   void AttachCorner(Corner currentCorner, NCL::Camera &cam) {
+    GetPhysicsObject()->SetAxisLocks(0);
+
+    std::vector<NCL::CSC8503::GameObject *> ignores;
+    for (auto &p : world->GetPlayerRange()) {
+      GameObject *player = p.second;
+      ignores.push_back(player);
+    }
+    ignores.push_back(this);
+
     Quaternion camRot =
         Quaternion::EulerAnglesToQuaternion(cam.GetPitch(), cam.GetYaw(), 0.f);
     auto forward = camRot * NCL::Maths::Vector3(0, 0, -1);
     Ray ray(cam.GetPosition(), forward);
 
     RayCollision closestCollision;
-    if (world->Raycast(ray, closestCollision, std::nullopt, player)) {
+    if (world->Raycast(ray, closestCollision, std::nullopt, ignores)) {
       auto node =
           static_cast<NCL::CSC8503::GameObject *>(closestCollision.node);
       auto offset =

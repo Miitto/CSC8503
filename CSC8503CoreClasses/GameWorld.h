@@ -3,6 +3,7 @@
 #include "IteratorRange.h"
 #include "ai/pathfinding/PathfindingService.h"
 #include "collisions/Ray.h"
+#include <span>
 
 namespace NCL {
 namespace Maths {
@@ -46,7 +47,14 @@ public:
 
   bool Raycast(Ray &r, RayCollision &collision,
                std::optional<float> maxDist = std::nullopt,
-               const GameObject *const ignore = nullptr) const;
+               const GameObject *const ignore = nullptr) const {
+    return Raycast(r, collision, maxDist,
+                   std::span<const GameObject *const>(&ignore, ignore ? 1 : 0));
+  }
+
+  bool Raycast(Ray &r, RayCollision &collision,
+               std::optional<float> maxDist = std::nullopt,
+               const std::span<const GameObject *const> ignore = {}) const;
 
   bool RaycastHitCheck(Ray &r, std::optional<float> maxDist = std::nullopt,
                        const GameObject *const ignore = nullptr) const;

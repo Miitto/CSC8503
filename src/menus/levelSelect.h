@@ -6,10 +6,10 @@
 #include <optional>
 
 std::optional<Level> selectLevel(NCL::gui::Frame &frame) {
-  if (frame.button("Default"))
-    return Level::Default;
-  if (frame.button("Collision Test"))
-    return Level::CollisionTest;
+  if (frame.button("One"))
+    return Level::One;
+  if (frame.button("Two"))
+    return Level::Two;
 
   return std::nullopt;
 }

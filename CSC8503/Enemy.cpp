@@ -12,11 +12,14 @@
 #include "ai/state_machine/StateTransition.h"
 
 namespace NCL::CSC8503 {
-Enemy::Enemy(const GameWorld &w, const std::string name, float viewDistance)
+Enemy::Enemy(const GameWorld &w, int id, const std::string name,
+             float viewDistance)
     : GameObject(name), world(w), rootBehaviour(name),
       viewDistance(viewDistance) {
   GetTags().set(Tag::Enemy);
   InitializeBehaviours();
+
+  networkObject = new NetworkObject(*this, id);
 }
 
 void Enemy::InitializeBehaviours() {
@@ -30,8 +33,6 @@ void Enemy::InitializeBehaviours() {
       Vector3 pPos = player.second->GetTransform().GetPosition();
 
       Vector3 dir = Vector::Normalise(pPos - pos);
-
-      Debug::DrawLine(pos, pPos, Vector4(1, 0, 0, 1));
 
       Ray ray(pos, dir);
       RayCollision hit;
@@ -49,11 +50,11 @@ void Enemy::InitializeBehaviours() {
 
   enum class WaypointState { Ongoing, Finished, Failed };
 
-  auto gotoNextWaypoint = [this]() {
+  auto gotoNextWaypoint = [this](float dt) {
     if (!nav.has_value()) {
       return WaypointState::Failed;
     }
-    if (NavigateTo(nav->waypoint)) {
+    if (NavigateTo(dt, nav->waypoint)) {
       if (!nav->next()) {
         nav.reset();
         return WaypointState::Finished;
@@ -63,8 +64,8 @@ void Enemy::InitializeBehaviours() {
   };
 
   std::unique_ptr chasingPlayer =
-      std::make_unique<State>([this, gotoNextWaypoint, canSeePlayer](float) {
-        gotoNextWaypoint();
+      std::make_unique<State>([this, gotoNextWaypoint, canSeePlayer](float dt) {
+        gotoNextWaypoint(dt);
         auto seenPlayer = canSeePlayer();
 
         if (seenPlayer.has_value()) {
@@ -74,30 +75,18 @@ void Enemy::InitializeBehaviours() {
 
           Vector3 to = currentPlayerPos - lastSeenPlayerPos;
 
-          if (!navRequest.has_value() && Vector::Dot(to, to) > 2) {
-            world.pathfind().requestPath(GetTransform().GetPosition(),
-                                         lastSeenPlayerPos, true);
-
-            if (navRequest.has_value()) {
-              lastSeenPlayerPos =
-                  seenPlayer.value()->GetTransform().GetPosition();
-            }
-          }
-        }
-
-        for (auto &player : world.GetPlayerRange()) {
-          Vector3 pPos = player.second->GetTransform().GetPosition();
-          Vector3 toPlayer = pPos - GetTransform().GetPosition();
-
-          if (Vector::Dot(toPlayer, toPlayer) < reach) {
-            player.second->Reset();
+          if (!navRequest.has_value() && Vector::Dot(to, to) > 5.f) {
+            navRequest = world.pathfind().requestPath(
+                GetTransform().GetPosition(), lastSeenPlayerPos, true);
+            lastSeenPlayerPos =
+                seenPlayer.value()->GetTransform().GetPosition();
           }
         }
       });
 
   std::unique_ptr patrolling =
-      std::make_unique<State>([this, gotoNextWaypoint](float) {
-        WaypointState state = gotoNextWaypoint();
+      std::make_unique<State>([this, gotoNextWaypoint](float dt) {
+        WaypointState state = gotoNextWaypoint(dt);
         switch (state) {
         case WaypointState::Ongoing:
           break;
@@ -128,6 +117,7 @@ void Enemy::InitializeBehaviours() {
               GetTransform().GetPosition(), lastSeenPlayerPos, true);
           return true;
         }
+        return false;
       });
 
   std::unique_ptr shouldPatrol = std::make_unique<StateTransition>(
@@ -136,6 +126,7 @@ void Enemy::InitializeBehaviours() {
           UpdateToClosestPatrolPoint();
           return true;
         }
+        return false;
       });
 
   pathfindingMachine.AddTransition(std::move(shouldChasePlayer));
@@ -165,7 +156,10 @@ void Enemy::CheckNavRequest() {
       auto path = res.unwrap();
       Vector3 first;
       path.PopWaypoint(first);
+      path.PopWaypoint(first);
       nav = Nav{.path = std::move(path), .waypoint = first};
+      navRequest.reset();
+      DEBUG("Enemy pathfinding succeeded");
     } else {
       WARN("Enemy pathfinding failed with error {}", res.unwrap_err());
       nav.reset();
@@ -173,16 +167,17 @@ void Enemy::CheckNavRequest() {
   }
 }
 
-bool Enemy::NavigateTo(const Vector3 &targetPos) {
+bool Enemy::NavigateTo(float dt, const Vector3 &targetPos) {
   Vector3 currentPos = GetTransform().GetPosition();
 
   Vector3 toTarget = targetPos - currentPos;
+  toTarget.y = 0.f;
 
   Vector3 moveDir = Vector::Normalise(toTarget);
 
-  GetPhysicsObject()->AddForce(moveDir * speed);
+  GetPhysicsObject()->AddForce(moveDir * speed * dt);
 
-  constexpr float waypointThreshold = 1.0f;
+  constexpr float waypointThreshold = 2.0f;
   return Vector::Dot(toTarget, toTarget) < waypointThreshold;
 }
 

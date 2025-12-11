@@ -499,6 +499,9 @@ void GameTechRenderer::RenderLines() {
   Matrix4 viewProj = projMatrix * viewMatrix;
 
   UseShader(*debugShader);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
   int matSlot =
       glGetUniformLocation(debugShader->GetProgramID(), "viewProjMatrix");
   GLuint texSlot =

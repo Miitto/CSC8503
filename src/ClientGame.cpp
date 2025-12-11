@@ -106,11 +106,11 @@ void ClientGame::SelectLevel(Level level) {
 
 void ClientGame::StartLevel(Level level) {
   switch (level) {
-  case Level::Default:
-    InitWorld();
+  case Level::One:
+    InitLvlOne();
     break;
-  case Level::CollisionTest:
-    InitCollisionTest();
+  case Level::Two:
+    InitLvlTwo();
     break;
   default:
     NET_WARN("Unknown level requested: {}", static_cast<int>(level));
@@ -118,9 +118,7 @@ void ClientGame::StartLevel(Level level) {
   }
 
   if (!serverNet) {
-    if (!net) {
-      player = SpawnPlayer(ourPlayerId);
-    }
+    player = SpawnPlayer(ourPlayerId);
 
     if (net) {
       for (auto id : connectedPlayers) {
@@ -128,7 +126,6 @@ void ClientGame::StartLevel(Level level) {
           SpawnPlayer(id);
         }
       }
-      player = SpawnPlayer(ourPlayerId);
     }
   } else {
     serverNet->OnLevelUpdate(level);
@@ -148,14 +145,14 @@ void ClientGame::StartLevel(Level level) {
 }
 
 void ClientGame::EndLevel() {
-  Level nextLevel = Level::Default;
+  Level nextLevel = Level::One;
 
   switch (currentLevel) {
-  case Level::Default:
-    nextLevel = Level::CollisionTest;
+  case Level::One:
+    nextLevel = Level::Two;
     break;
-  case Level::CollisionTest:
-    nextLevel = Level::Default;
+  case Level::Two:
+    nextLevel = Level::One;
     break;
   }
 

@@ -30,8 +30,8 @@ public:
   void RequestEndLevel() { shouldEndLevel = true; }
 
   virtual void Clear();
-  void InitWorld();
-  void InitCollisionTest();
+  void InitLvlOne();
+  void InitLvlTwo();
 
   virtual Player *SpawnPlayer(int id);
   virtual void RemovePlayer(int id);
@@ -85,7 +85,7 @@ protected:
   StateGameObject *AddStateObjectToWorld(const NCL::Maths::Vector3 &position);
 
   Player *AddPlayerToWorld(const NCL::Maths::Vector3 &position, int id);
-  GameObject *AddEnemyToWorld(const NCL::Maths::Vector3 &position);
+  Enemy *AddEnemyToWorld(const NCL::Maths::Vector3 &position, int id);
   GameObject *AddBonusToWorld(const NCL::Maths::Vector3 &position);
 
   Pane *AddPaneToWorld(const NCL::Maths::Vector3 &position,

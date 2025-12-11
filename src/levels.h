@@ -3,8 +3,8 @@
 #include <spdlog/fmt/bundled/format.h>
 
 enum class Level : uint8_t {
-  Default,
-  CollisionTest,
+  One,
+  Two,
 };
 
 template <> struct fmt::formatter<Level> : fmt::formatter<std::string_view> {
@@ -12,11 +12,11 @@ template <> struct fmt::formatter<Level> : fmt::formatter<std::string_view> {
   auto format(const Level &level, FormatContext &ctx) const {
     std::string_view name = "Unknown";
     switch (level) {
-    case Level::Default:
-      name = "Default";
+    case Level::One:
+      name = "One";
       break;
-    case Level::CollisionTest:
-      name = "CollisionTest";
+    case Level::Two:
+      name = "Two";
       break;
     }
     return fmt::formatter<std::string_view>::format(name, ctx);

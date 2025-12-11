@@ -105,7 +105,7 @@ protected:
   int ourPlayerId = -1;
   std::vector<int> connectedPlayers;
 
-  Level currentLevel = Level::Default;
+  Level currentLevel = Level::One;
 
   Pane::Corner cornerToAttach = Pane::Corner::FrontLeft;
 

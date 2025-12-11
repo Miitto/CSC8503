@@ -2,6 +2,7 @@
 #include "NavigationMap.h"
 #include <array>
 #include <string>
+#include <vector>
 
 namespace NCL::CSC8503 {
 struct GridNode {
@@ -29,10 +30,6 @@ class NavigationGrid : public NavigationMap {
 public:
   NavigationGrid() = default;
   NavigationGrid(const std::string &filename, const Vector3 origin = {});
-  ~NavigationGrid();
-
-  NavigationGrid(const NavigationGrid &other) = delete;
-  NavigationGrid(NavigationGrid &&other) noexcept;
 
   bool FindPath(const Vector3 &from, const Vector3 &to, NavigationPath &outPath,
                 bool centered = false) override;
@@ -46,6 +43,19 @@ public:
 
   bool isNodeWalkable(int x, int y) const;
 
+  struct MinMax {
+    Vector2 min;
+    Vector2 max;
+  };
+
+  MinMax GetGridBounds() const {
+    MinMax bounds;
+    bounds.min = Vector2(gridOrigin.x, gridOrigin.z);
+    bounds.max = Vector2(gridOrigin.x + gridWidth * nodeSize,
+                         gridOrigin.z + gridHeight * nodeSize);
+    return bounds;
+  }
+
 protected:
   bool NodeInList(GridNode *n, std::vector<GridNode *> &list) const;
   GridNode *RemoveBestNode(std::vector<GridNode *> &list) const;
@@ -55,6 +65,6 @@ protected:
   int gridHeight = 0;
   Vector3 gridOrigin = {};
 
-  GridNode *allNodes = nullptr;
+  std::vector<GridNode> allNodes;
 };
 } // namespace NCL::CSC8503

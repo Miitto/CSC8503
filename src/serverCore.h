@@ -152,7 +152,7 @@ protected:
   int snapshotsToStateUpdate = SNAPSHOTS_PER_STATEUPDATE;
   ClientDir clients;
 
-  Level currentLevel = Level::Default;
+  Level currentLevel = Level::One;
 
   NetworkedGame &game;
 };

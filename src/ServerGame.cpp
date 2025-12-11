@@ -30,11 +30,11 @@ void ServerGame::UpdateMinimumState() { net.UpdateMinimumState(world); }
 
 void ServerGame::StartLevel(Level level) {
   switch (level) {
-  case Level::Default:
-    InitWorld();
+  case Level::One:
+    InitLvlOne();
     break;
-  case Level::CollisionTest:
-    InitCollisionTest();
+  case Level::Two:
+    InitLvlTwo();
     break;
   default:
     NET_WARN("Unknown level requested: {}", static_cast<int>(level));
@@ -54,14 +54,14 @@ void ServerGame::StartLevel(Level level) {
 
 void ServerGame::EndLevel() {
   net.OnLevelEnd();
-  Level nextLevel = Level::Default;
+  Level nextLevel = Level::One;
 
   switch (net.GetCurrentLevel()) {
-  case Level::Default:
-    nextLevel = Level::CollisionTest;
+  case Level::One:
+    nextLevel = Level::Two;
     break;
-  case Level::CollisionTest:
-    nextLevel = Level::Default;
+  case Level::Two:
+    nextLevel = Level::One;
     break;
   }
 
@@ -74,7 +74,7 @@ void ServerGame::ReceivePacket(GamePacketType type, GamePacket *payload,
   switch (type.type) {
   case BasicNetworkMessages::Hello: {
     if (!started) {
-      StartLevel(Level::Default);
+      StartLevel(Level::One);
       started = true;
     }
     break;

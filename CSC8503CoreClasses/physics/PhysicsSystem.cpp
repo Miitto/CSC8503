@@ -379,7 +379,6 @@ throughout a physics update, to slowly move the objects through
 the world, looking for collisions.
 */
 void PhysicsSystem::IntegrateVelocity(float dt) {
-  const float frameLinearDamping = 1.0f - (0.4f * dt);
 
   for (auto i : gameWorld) {
     auto objP = i->GetPhysicsObject();
@@ -389,6 +388,10 @@ void PhysicsSystem::IntegrateVelocity(float dt) {
     }
 
     auto &obj = *objP;
+
+    PhysicsObject::PhysicsMaterial &material = obj.GetMaterial();
+    const float frameLinearDamping =
+        1.0f - ((1.0f - material.linearDamping) * dt);
 
     obj.ClampVelocities();
 
@@ -410,7 +413,8 @@ void PhysicsSystem::IntegrateVelocity(float dt) {
 
     transform.SetOrientation(rot);
 
-    const float frameAngularDamping = 1.0f - (0.4f * dt);
+    const float frameAngularDamping =
+        1.0f - ((1.0f - material.angularDamping) * dt);
     w *= frameAngularDamping;
     obj.SetAngularVelocity(w);
   }

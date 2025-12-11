@@ -54,7 +54,17 @@ public:
   }
 
 protected:
-  void addGrid(NavigationGrid &&grid) { grids.emplace_back(std::move(grid)); }
+  void addGrid(NavigationGrid &&grid) {
+    NavigationGrid::MinMax bounds = grid.GetGridBounds();
+
+    AI_DEBUG("Adding Navigation Grid: Width {}, Height {}, Node Size "
+             "{} at {}\nExtents: ({}, {}) -> ({}, {})",
+             grid.GetWidth(), grid.GetHeight(), grid.GetNodeSize(),
+             grid.GetOrigin(), bounds.min.x, bounds.min.y, bounds.max.x,
+             bounds.max.y);
+
+    grids.emplace_back(std::move(grid));
+  }
   void addPath(NavigationMesh &&mesh) { paths.emplace_back(std::move(mesh)); }
   void handleRequest(PathfindingService::PathfindingRequest &request) {
     // TODO: Implement pathfinding logic here
@@ -67,28 +77,28 @@ protected:
     }
 
     std::visit(NCL::overloaded{
-                   [&](NavigationGrid &grid) {
-                     GetPath(grid, request.startPos, request.endPos, request);
+                   [&](NavigationGrid *grid) {
+                     GetPath(*grid, request.startPos, request.endPos, request);
                    },
-                   [&](NavigationMesh &mesh) {
-                     GetPath(mesh, request.startPos, request.endPos, request);
+                   [&](NavigationMesh *mesh) {
+                     GetPath(*mesh, request.startPos, request.endPos, request);
                    },
                },
                *navDataOpt);
   }
 
-  using NavData = std::variant<NavigationGrid, NavigationMesh>;
+  using NavData = std::variant<NavigationGrid *, NavigationMesh *>;
 
   std::optional<NavData> findSuitableNav(const Maths::Vector3 &from,
                                          const Maths::Vector3 &to) {
     for (auto &grid : grids) {
       if (grid.containsPoint(to) && grid.containsPoint(from))
-        return std::move(grid);
+        return &grid;
     }
 
     for (auto &mesh : paths) {
       if (mesh.containsPoint(to) && mesh.containsPoint(from))
-        return mesh;
+        return &mesh;
     }
 
     return std::nullopt;

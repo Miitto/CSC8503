@@ -25,7 +25,7 @@ NavigationGrid::NavigationGrid(const std::string &filename,
   infile >> gridWidth;
   infile >> gridHeight;
 
-  allNodes = new GridNode[gridWidth * gridHeight];
+  allNodes.resize(gridWidth * gridHeight);
 
   for (int y = 0; y < gridHeight; ++y) {
     for (int x = 0; x < gridWidth; ++x) {
@@ -68,26 +68,11 @@ NavigationGrid::NavigationGrid(const std::string &filename,
   }
 }
 
-NavigationGrid::~NavigationGrid() {
-  if (allNodes)
-    delete[] allNodes;
-}
-
-NavigationGrid::NavigationGrid(NavigationGrid &&other) noexcept
-    : nodeSize(other.nodeSize), gridWidth(other.gridWidth),
-      gridHeight(other.gridHeight), gridOrigin(other.gridOrigin),
-      allNodes(other.allNodes) {
-  other.allNodes = nullptr;
-}
-
 bool NavigationGrid::containsPoint(const Vector3 &point) const {
-  float xMin = gridOrigin.x;
-  float xMax = gridOrigin.x + (gridWidth * nodeSize);
-  float zMin = gridOrigin.z;
-  float zMax = gridOrigin.z + (gridHeight * nodeSize);
+  MinMax bounds = GetGridBounds();
 
-  return (point.x >= xMin && point.x <= xMax && point.z >= zMin &&
-          point.z <= zMax);
+  return (point.x >= bounds.min.x && point.x <= bounds.max.x &&
+          point.z >= bounds.min.y && point.z <= bounds.max.y);
 }
 
 bool NavigationGrid::FindPath(const Vector3 &fromWorld, const Vector3 &toWorld,
@@ -129,15 +114,19 @@ bool NavigationGrid::FindPath(const Vector3 &fromWorld, const Vector3 &toWorld,
 
     if (currentBestNode == endNode) { // we've found the path!
       GridNode *node = endNode;
+      outPath.PushWaypoint(toWorld);
       while (node != nullptr) {
         Vector3 pos = node->position + gridOrigin;
         if (centered) {
           pos.x += nodeSize / 2.0f;
           pos.z += nodeSize / 2.0f;
         }
+        pos.y = gridOrigin.y;
         outPath.PushWaypoint(pos);
         node = node->parent;
       }
+      Vector3 dummy;
+      outPath.PopWaypoint(dummy); // remove first waypoint (we're already there)
       return true;
     } else {
       for (int i = 0; i < 4; ++i) {
@@ -201,6 +190,6 @@ bool NavigationGrid::isNodeWalkable(int x, int y) const {
   if (x < 0 || x >= gridWidth || y < 0 || y >= gridHeight) {
     return false;
   }
-  GridNode &n = allNodes[(gridWidth * y) + x];
+  const GridNode &n = allNodes[(gridWidth * y) + x];
   return n.type == FLOOR_NODE;
 }

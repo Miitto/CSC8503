@@ -13,12 +13,27 @@ class Transform;
 class PhysicsObject {
 public:
   enum AxisLock : uint8_t {
-    LinearX = BIT(1),
-    LinearY = BIT(2),
-    LinearZ = BIT(3),
-    AngularX = BIT(4),
-    AngularY = BIT(5),
-    AngularZ = BIT(6)
+    LinearX = BIT(0),
+    LinearY = BIT(1),
+    LinearZ = BIT(2),
+    AngularX = BIT(3),
+    AngularY = BIT(4),
+    AngularZ = BIT(5)
+  };
+
+  struct PhysicsMaterial {
+    float linearDamping = 0.8f;
+    float angularDamping = 0.8f;
+
+    PhysicsMaterial &SetLinearDamping(float damping) {
+      linearDamping = damping == 0.0f ? 1.0f : 1.0f / damping;
+      return *this;
+    }
+
+    PhysicsMaterial &SetAngularDamping(float damping) {
+      angularDamping = damping == 0.0f ? 1.0f : 1.0f / damping;
+      return *this;
+    }
   };
 
   PhysicsObject(Transform &parentTransform,
@@ -63,12 +78,17 @@ public:
 
   void SetAngularVelocity(const Vector3 &v) { angularVelocity = v; }
 
+  PhysicsMaterial &GetMaterial() { return material; }
+
   void InitCubeInertia();
   void InitSphereInertia();
 
   void UpdateInertiaTensor();
 
   Matrix3 GetInertiaTensor() const { return inverseInteriaTensor; }
+
+  uint8_t GetAxisLocks() const { return axisLocks; }
+  void SetAxisLocks(uint8_t locks) { axisLocks = locks; }
 
 protected:
   const CollisionVolume *volume;
@@ -79,6 +99,8 @@ protected:
   float friction;
 
   uint8_t axisLocks;
+
+  PhysicsMaterial material;
 
   // linear stuff
   Vector3 linearVelocity;
