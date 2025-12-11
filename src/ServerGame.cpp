@@ -43,13 +43,6 @@ void ServerGame::StartLevel(Level level) {
 
   net.OnLevelUpdate(level);
 
-  for (auto &player : world.GetPlayerRange()) {
-    NCL::CSC8503::NetworkObject *netObj = player.second->GetNetworkObject();
-    if (netObj) {
-      networkObjects.push_back(netObj);
-    }
-  }
-
   for (auto &obj : world) {
     NCL::CSC8503::NetworkObject *netObj = obj->GetNetworkObject();
     if (netObj && std::find(networkObjects.begin(), networkObjects.end(),

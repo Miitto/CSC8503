@@ -53,10 +53,11 @@ struct DeltaPacket : public GamePacket {
 };
 
 struct ClientPacket : public GamePacket {
+  int playerId = -1;
   int lastID = 0;
   uint64_t actions = 0;
-  int8_t posDelta[3] = {0, 0, 0};
-  int8_t rotDelta[3] = {0, 0, 0};
+  float pos[3] = {0, 0, 0};
+  int16_t rot[2] = {0, 0};
 
   ClientPacket()
       : GamePacket(BasicNetworkMessages::PlayerState,

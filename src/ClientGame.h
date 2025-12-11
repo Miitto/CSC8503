@@ -96,8 +96,6 @@ protected:
 
   void StartLevel(Level level);
 
-  ClientPacket createClientPacket();
-
   int lastFullSync = 0;
 
   std::optional<PingInfo> pingInfo = std::nullopt;

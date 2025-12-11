@@ -13,15 +13,14 @@
 #include <vector>
 
 namespace NCL::CSC8503 {
-ServerCore::ServerCore(uint16_t port, int maxClients, TutorialGame &game)
-    : net(::NCL::CSC8503::GameServer(port, maxClients)), game(game) {
+ServerCore::ServerCore(uint16_t port, int maxClients, NetworkedGame &game)
+    : GameServer(port, maxClients), game(game) {
   LOG("Server Core starting on port {}", port);
-  net.RegisterPacketHandler(GamePacketType(BasicNetworkMessages::PlayerState),
-                            this);
-  net.RegisterPacketHandler(BasicNetworkMessages::Received_State, this);
-  net.RegisterPacketHandler(BasicNetworkMessages::Hello, this);
-  net.RegisterPacketHandler(BasicNetworkMessages::Shutdown, this);
-  net.RegisterPacketHandler(BasicNetworkMessages::Ping, this);
+  RegisterPacketHandler(GamePacketType(BasicNetworkMessages::PlayerState),
+                        this);
+  RegisterPacketHandler(BasicNetworkMessages::Received_State, this);
+  RegisterPacketHandler(BasicNetworkMessages::Hello, this);
+  RegisterPacketHandler(BasicNetworkMessages::Ping, this);
 }
 
 void ServerCore::Update(float dt, GameWorld &world) {
@@ -47,10 +46,18 @@ void ServerCore::ReceivePacket(GamePacketType type, GamePacket *payload,
   case BasicNetworkMessages::PlayerState: {
     if (!clients.contains(source))
       break;
+    ClientPacket &input = ClientPacket::as<ClientPacket>(*payload);
+    input.playerId = source;
+
+    SendGlobalPacket(input);
+
     auto &client = clients.get(source);
     if (client.playerObj) {
-      ClientPacket &input = ClientPacket::as<ClientPacket>(*payload);
-      client.playerObj->Input(0.0f, input);
+      auto now = std::chrono::high_resolution_clock::now();
+      auto deltaTime =
+          std::chrono::duration<float>(now - client.lastInputTime).count();
+      client.lastInputTime = now;
+      client.playerObj->Input(deltaTime, input);
     }
     break;
   }
@@ -67,33 +74,27 @@ void ServerCore::ReceivePacket(GamePacketType type, GamePacket *payload,
     }
     NET_INFO("Player {} connected.", source);
     Player *player = game.SpawnPlayer(source);
-    clients.insert(NetworkClient{.peer = net.GetPeer(source),
+    clients.insert(NetworkClient{.peer = GetPeer(source),
                                  .clientID = source,
                                  .playerObj = player,
                                  .lastReceivedStateID = -1});
-    net.SendGlobalPacket(PlayerConnectedPacket(source));
-    net.SendPacketToClient(source, HelloPacket(source));
-    net.SendPacketToClient(
-        source, LevelChangePacket(static_cast<uint8_t>(currentLevel)));
+    SendGlobalPacket(PlayerConnectedPacket(source));
+    SendPacketToClient(source, HelloPacket(source));
+    SendPacketToClient(source,
+                       LevelChangePacket(static_cast<uint8_t>(currentLevel)));
 
     for (auto &client : clients) {
       if (client.first == source) {
         continue;
       }
-      net.SendPacketToClient(source, PlayerConnectedPacket(client.first));
+      SendPacketToClient(source, PlayerConnectedPacket(client.first));
     }
 
     break;
   }
-  case static_cast<uint16_t>(BasicNetworkMessages::Shutdown): {
-    NET_INFO("Player {} disconnected.", source);
-    game.RemovePlayer(source);
-    clients.erase(source);
-    break;
-  }
   case static_cast<uint16_t>(BasicNetworkMessages::Ping): {
-    net.SendPacketToClient(source,
-                           GamePacketType(BasicNetworkMessages::Ping_Response));
+    SendPacketToClient(source,
+                       GamePacketType(BasicNetworkMessages::Ping_Response));
     break;
   }
   }
@@ -118,9 +119,10 @@ void ServerCore::BroadcastSnapshot(bool deltaFrame,
         // skip host player
         continue;
       }
+
       if (o->WritePacket(&newPacket, deltaFrame,
                          player.second.lastReceivedStateID)) {
-        net.SendPacketToClient(player.first, *newPacket);
+        SendPacketToClient(player.first, *newPacket);
       }
     }
   }
@@ -141,11 +143,14 @@ void ServerCore::UpdateMinimumState(::NCL::CSC8503::GameWorld &world) {
 
 void ServerCore::OnLevelUpdate(Level level) {
   NET_INFO("Changing to level {}", level);
-  net.SendGlobalPacket(LevelChangePacket(static_cast<uint8_t>(level)));
+  SendGlobalPacket(LevelChangePacket(static_cast<uint8_t>(level)));
   currentLevel = level;
 
   for (auto &player : clients) {
+    if (player.first == -1)
+      continue;
     player.second.playerObj = game.SpawnPlayer(player.first);
+    player.second.lastInputTime = std::chrono::high_resolution_clock::now();
   }
 }
 
@@ -153,6 +158,7 @@ void ServerCore::OnLevelEnd() {
   NET_INFO("Level ended on server.");
   for (auto &player : clients) {
     player.second.playerObj = nullptr;
+    player.second.lastReceivedStateID = -1;
   }
 }
 

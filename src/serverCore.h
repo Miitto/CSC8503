@@ -2,7 +2,7 @@
 
 #include "GameObject.h"
 #include "GameWorld.h"
-#include "TutorialGame.h"
+#include "NetworkedGame.h"
 #include "logging/logger.h"
 #include "networking/GameServer.h"
 #include "networking/NetworkBase.h"
@@ -21,6 +21,8 @@ struct NetworkClient {
   ENetPeer *peer;
   ClientId clientID; // Duplicate of peer ID for convenience
   Player *playerObj;
+  std::chrono::steady_clock::time_point lastInputTime =
+      std::chrono::high_resolution_clock::now();
   int lastReceivedStateID;
 };
 
@@ -96,18 +98,12 @@ protected:
   std::map<ClientId, NetworkClient> clients = {};
 };
 
-class ServerCore : public PacketReceiver {
+class ServerCore : public PacketReceiver, public GameServer {
 public:
-  ServerCore(uint16_t port, int maxClients, TutorialGame &game);
+  ServerCore(uint16_t port, int maxClients, NetworkedGame &game);
   ~ServerCore() {
-    net.SendGlobalPacket(GamePacket(BasicNetworkMessages::Shutdown));
+    SendGlobalPacket(GamePacket(BasicNetworkMessages::Shutdown));
   }
-
-  void RegisterPacketHandler(GamePacketType type, PacketReceiver *receiver) {
-    net.RegisterPacketHandler(type, receiver);
-  }
-
-  void UpdateServer() { net.UpdateServer(); }
 
   void Update(float dt, GameWorld &world);
   void ReceivePacket(GamePacketType type, GamePacket *payload,
@@ -116,7 +112,6 @@ public:
   void UpdateMinimumState(::NCL::CSC8503::GameWorld &world);
   int GetPacketsToSnapshot() const { return packetsToSnapshot; }
 
-  const GameServer &GetServer() const { return net; }
   const ClientDir &GetClients() const { return clients; }
 
   void OnLevelUpdate(Level level);
@@ -130,7 +125,7 @@ public:
                                  .clientID = -1,
                                  .playerObj = player,
                                  .lastReceivedStateID = -1});
-    net.SendGlobalPacket(PlayerConnectedPacket(-1));
+    SendGlobalPacket(PlayerConnectedPacket(-1));
 
     return player;
   }
@@ -141,17 +136,24 @@ public:
     return clients.get(clientID).playerObj;
   }
 
+  void OnClientDisconnect(ClientId clientID) override {
+    if (!clients.contains(clientID))
+      return;
+    game.RemovePlayer(clientID);
+    clients.erase(clientID);
+    SendGlobalPacket(PlayerDisconnectedPacket(clientID));
+  }
+
 protected:
   const int PACKETS_PER_SNAPSHOT = 5;
   const int SNAPSHOTS_PER_STATEUPDATE = 5;
 
-  GameServer net;
   int packetsToSnapshot = 0;
   int snapshotsToStateUpdate = SNAPSHOTS_PER_STATEUPDATE;
   ClientDir clients;
 
   Level currentLevel = Level::Default;
 
-  TutorialGame &game;
+  NetworkedGame &game;
 };
 } // namespace NCL::CSC8503

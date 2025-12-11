@@ -45,3 +45,24 @@ void NetworkedGame::UpdateGame(float dt) {
 
   TutorialGame::UpdateGame(dt);
 }
+
+Player *NetworkedGame::SpawnPlayer(int id) {
+  Player *player = TutorialGame::SpawnPlayer(id);
+  NetworkObject *netObj = player->GetNetworkObject();
+  if (netObj) {
+    networkObjects.push_back(netObj);
+  }
+  return player;
+}
+
+void NetworkedGame::RemovePlayer(int id) {
+  TutorialGame::RemovePlayer(id);
+  networkObjects.erase(
+      std::remove_if(
+          networkObjects.begin(), networkObjects.end(),
+          [id](NetworkObject *obj) {
+            return obj->GetObject().GetTags().has(GameObject::Tag::Player) &&
+                   static_cast<Player &>(obj->GetObject()).GetId() == id;
+          }),
+      networkObjects.end());
+}

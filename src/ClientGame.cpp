@@ -6,21 +6,10 @@
 #include "networking/NetworkObject.h"
 #include <array>
 #include <levels.h>
-
-#define COLLISION_MSG 30
+#include <logging/log.h>
 
 using namespace NCL;
 using namespace CSC8503;
-
-struct MessagePacket : public GamePacket {
-  short playerID;
-  short messageID;
-
-  MessagePacket() {
-    type = BasicNetworkMessages::Message;
-    size = sizeof(short) * 2;
-  }
-};
 
 ClientGame::ClientGame(GameWorld &gameWorld,
                        GameTechRendererInterface &renderer,
@@ -30,7 +19,7 @@ ClientGame::ClientGame(GameWorld &gameWorld,
 }
 
 void ClientGame::SetupPacketHandlers() {
-  constexpr std::array<uint16_t, 8> handledMessages = {
+  constexpr std::array<uint16_t, 9> handledMessages = {
       BasicNetworkMessages::Full_State,
       BasicNetworkMessages::Delta_State,
       BasicNetworkMessages::Ping_Response,
@@ -39,6 +28,7 @@ void ClientGame::SetupPacketHandlers() {
       BasicNetworkMessages::Shutdown,
       BasicNetworkMessages::Hello,
       BasicNetworkMessages::LevelChange,
+      BasicNetworkMessages::PlayerState,
   };
 
   for (auto msgID : handledMessages) {
@@ -64,13 +54,17 @@ void ClientGame::ShutdownServer() { serverNet = std::nullopt; }
 void ClientGame::NetworkUpdate(float dt) {
   if (serverNet) {
     serverNet->Update(dt, world);
+    if (player)
+      serverNet->SendGlobalPacket(player->CreateInputPacket());
   }
 
   if (!net)
     return;
 
-  if (!serverNet)
-    net->SendPacket(createClientPacket());
+  if (!serverNet) {
+    if (player)
+      net->SendPacket(player->CreateInputPacket());
+  }
 }
 
 void ClientGame::PingCheck(float dt) {
@@ -143,17 +137,11 @@ void ClientGame::StartLevel(Level level) {
 
   world.SetMainCamera(&player->GetCamera());
 
-  for (auto &player : world.GetPlayerRange()) {
-    NCL::CSC8503::NetworkObject *netObj = player.second->GetNetworkObject();
-    if (netObj) {
-      networkObjects.push_back(netObj);
-    }
-  }
-
   for (auto &obj : world) {
     NCL::CSC8503::NetworkObject *netObj = obj->GetNetworkObject();
     if (netObj && std::find(networkObjects.begin(), networkObjects.end(),
                             netObj) == networkObjects.end()) {
+      DEBUG("Syncing object {}", obj->GetName());
       networkObjects.push_back(netObj);
     }
   }
@@ -190,76 +178,18 @@ void ClientGame::UpdateGame(float dt) {
     serverNet->UpdateServer();
   }
 
+  if (player)
+    player->ClientInput(dt);
+
   NetworkedGame::UpdateGame(dt);
 
-  if (player)
-    player->Input(dt, createClientPacket());
-}
+  if (net) {
+    net->UpdateClient();
+  }
 
-ClientPacket ClientGame::createClientPacket() {
-  Bitflag<Player::Actions> actions;
-
-  auto &kb = *Window::GetKeyboard();
-
-  if (kb.KeyDown(KeyCodes::W))
-    actions.set(Player::Actions::MoveForward);
-  if (kb.KeyDown(KeyCodes::S))
-    actions.set(Player::Actions::MoveBackward);
-  if (kb.KeyDown(KeyCodes::A))
-    actions.set(Player::Actions::MoveLeft);
-  if (kb.KeyDown(KeyCodes::D))
-    actions.set(Player::Actions::MoveRight);
-  if (kb.KeyDown(KeyCodes::SPACE))
-    actions.set(Player::Actions::Jump);
-
-  bool shiftDown = kb.KeyDown(KeyCodes::SHIFT);
-  bool ctrlDown = kb.KeyDown(KeyCodes::CONTROL);
-
-  bool attaching = !shiftDown && !ctrlDown;
-  bool extending = !shiftDown && ctrlDown;
-  bool retracting = !ctrlDown && shiftDown;
-  bool detaching = shiftDown && ctrlDown;
-
-  if (kb.KeyDown(KeyCodes::NUM1) && attaching)
-    actions.set(Player::Actions::AttachFrontLeftCorner);
-  if (kb.KeyDown(KeyCodes::NUM2) && attaching)
-    actions.set(Player::Actions::AttachFrontRightCorner);
-  if (kb.KeyDown(KeyCodes::NUM3) && attaching)
-    actions.set(Player::Actions::AttachBackLeftCorner);
-  if (kb.KeyDown(KeyCodes::NUM4) && attaching)
-    actions.set(Player::Actions::AttachBackRightCorner);
-
-  if (kb.KeyDown(KeyCodes::NUM1) && extending)
-    actions.set(Player::Actions::ExtendFrontLeftCorner);
-  if (kb.KeyDown(KeyCodes::NUM2) && extending)
-    actions.set(Player::Actions::ExtendFrontRightCorner);
-  if (kb.KeyDown(KeyCodes::NUM3) && extending)
-    actions.set(Player::Actions::ExtendBackLeftCorner);
-  if (kb.KeyDown(KeyCodes::NUM4) && extending)
-    actions.set(Player::Actions::ExtendBackRightCorner);
-
-  if (kb.KeyDown(KeyCodes::NUM1) && retracting)
-    actions.set(Player::Actions::RetractFrontLeftCorner);
-  if (kb.KeyDown(KeyCodes::NUM2) && retracting)
-    actions.set(Player::Actions::RetractFrontRightCorner);
-  if (kb.KeyDown(KeyCodes::NUM3) && retracting)
-    actions.set(Player::Actions::RetractBackLeftCorner);
-  if (kb.KeyDown(KeyCodes::NUM4) && retracting)
-    actions.set(Player::Actions::RetractBackRightCorner);
-
-  if (kb.KeyDown(KeyCodes::NUM1) && detaching)
-    actions.set(Player::Actions::DetachFrontLeftCorner);
-  if (kb.KeyDown(KeyCodes::NUM2) && detaching)
-    actions.set(Player::Actions::DetachFrontRightCorner);
-  if (kb.KeyDown(KeyCodes::NUM3) && detaching)
-    actions.set(Player::Actions::DetachBackLeftCorner);
-  if (kb.KeyDown(KeyCodes::NUM4) && detaching)
-    actions.set(Player::Actions::DetachBackRightCorner);
-
-  ClientPacket p;
-  p.actions = actions.flags;
-
-  return p;
+  if (serverNet) {
+    serverNet->UpdateServer();
+  }
 }
 
 void ClientGame::ReceivePacket(GamePacketType type, GamePacket *payload,
@@ -323,6 +253,23 @@ void ClientGame::ReceivePacket(GamePacketType type, GamePacket *payload,
     auto level = static_cast<Level>(packet->level);
     NET_INFO("Changing to level {}", level);
     StartLevel(level);
+    break;
+  }
+  case BasicNetworkMessages::PlayerState: {
+    auto &playerPacket = *GamePacket::as<ClientPacket>(payload);
+
+    if (playerPacket.playerId == ourPlayerId) {
+      // Ignore our own packets
+      break;
+    }
+
+    Player *player =
+        reinterpret_cast<Player *>(world.GetPlayer(playerPacket.playerId));
+    if (player) {
+      float deltaTime = player->GetInputDeltaTime();
+      player->Input(deltaTime, playerPacket);
+    }
+
     break;
   }
   }

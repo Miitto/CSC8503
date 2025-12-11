@@ -33,8 +33,8 @@ public:
   void InitWorld();
   void InitCollisionTest();
 
-  Player *SpawnPlayer(int id);
-  void RemovePlayer(int id);
+  virtual Player *SpawnPlayer(int id);
+  virtual void RemovePlayer(int id);
 
   void SetActive(bool state) { active = state; }
   void SetCameraActive(bool state) { updateCamera = state; }

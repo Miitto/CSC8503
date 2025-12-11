@@ -18,22 +18,18 @@ public:
     AttachFrontRightCorner = BIT(2),
     AttachBackLeftCorner = BIT(3),
     AttachBackRightCorner = BIT(4),
-    MoveForward = BIT(5),
-    MoveBackward = BIT(6),
-    MoveLeft = BIT(7),
-    MoveRight = BIT(8),
-    ExtendFrontLeftCorner = BIT(9),
-    ExtendFrontRightCorner = BIT(10),
-    ExtendBackLeftCorner = BIT(11),
-    ExtendBackRightCorner = BIT(12),
-    RetractFrontLeftCorner = BIT(13),
-    RetractFrontRightCorner = BIT(14),
-    RetractBackLeftCorner = BIT(15),
-    RetractBackRightCorner = BIT(16),
-    DetachFrontLeftCorner = BIT(17),
-    DetachFrontRightCorner = BIT(18),
-    DetachBackLeftCorner = BIT(19),
-    DetachBackRightCorner = BIT(20)
+    ExtendFrontLeftCorner = BIT(5),
+    ExtendFrontRightCorner = BIT(6),
+    ExtendBackLeftCorner = BIT(7),
+    ExtendBackRightCorner = BIT(8),
+    RetractFrontLeftCorner = BIT(9),
+    RetractFrontRightCorner = BIT(10),
+    RetractBackLeftCorner = BIT(11),
+    RetractBackRightCorner = BIT(12),
+    DetachFrontLeftCorner = BIT(13),
+    DetachFrontRightCorner = BIT(14),
+    DetachBackLeftCorner = BIT(15),
+    DetachBackRightCorner = BIT(16)
   };
 
   using ActionFlags = Bitflag<Actions>;
@@ -62,16 +58,34 @@ public:
   ~Player() { delete controller; }
 
   void Update(float dt) override;
-  void Input(float dt, ClientPacket input) override;
+
+  /// @brief Directly applies client input to the player, such as movement
+  /// @param dt
+  void ClientInput(float dt);
+  /// @brief Applies input received from the client over the network
+  /// @param dt
+  /// @param input
+  void Input(float dt, ClientPacket input, bool skipPosRot = false) override;
 
   void OnCollisionBegin(GameObject *otherObject) override;
 
   PerspectiveCamera &GetCamera() { return camera; }
+
+  ClientPacket CreateInputPacket();
+
+  float GetInputDeltaTime() {
+    auto now = std::chrono::steady_clock::now();
+    auto delta = std::chrono::duration<float>(now - lastInputTime).count();
+    lastInputTime = now;
+    return delta;
+  }
 
 protected:
   GameWorld *world;
   ::Pane *pane;
   PerspectiveCamera camera;
   Controller *controller;
+  std::chrono::steady_clock::time_point lastInputTime =
+      std::chrono::high_resolution_clock::now();
 };
 } // namespace NCL::CSC8503

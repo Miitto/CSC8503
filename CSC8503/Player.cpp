@@ -3,6 +3,11 @@
 #include "Bitflag.h"
 #include "physics/PhysicsObject.h"
 
+namespace {
+constexpr float ORIENTATION_DELTA_SCALE =
+    std::numeric_limits<uint16_t>::max() / 360.f;
+} // namespace
+
 namespace NCL::CSC8503 {
 
 void Player::Update(float dt) {
@@ -16,40 +21,71 @@ void Player::Update(float dt) {
   GetTransform().SetOrientation(rot);
 }
 
-void Player::Input(float dt, ClientPacket input) {
+void Player::ClientInput(float dt) {
+  auto &phys = *GetPhysicsObject();
+
+  float pitch = camera.GetPitch();
+  float yaw = camera.GetYaw();
+
+  pitch -= controller->GetNamedAxis("YLook");
+  yaw -= controller->GetNamedAxis("XLook");
+
+  pitch = std::min(pitch, 90.0f);
+  pitch = std::max(pitch, -90.0f);
+
+  if (yaw < 0) {
+    yaw += 360.0f;
+  }
+  if (yaw > 360.0f) {
+    yaw -= 360.0f;
+  }
+  camera.SetYaw(yaw);
+  camera.SetPitch(pitch);
+
+  float forward = controller->GetNamedAxis("Forward");
+  float sidestep = controller->GetNamedAxis("Sidestep");
+
   constexpr Vector3 UP{0, 1, 0};
   constexpr Vector3 RIGHT{1, 0, 0};
   constexpr Vector3 FORWARD{0, 0, -1};
 
   auto forwardQ = Quaternion::AxisAngleToQuaterion(UP, camera.GetYaw());
 
-  const Vector3 forward = forwardQ * FORWARD;
-  const Vector3 right = Vector::Cross(forward, UP);
+  const Vector3 forwardV = forwardQ * FORWARD;
+  const Vector3 rightV = Vector::Cross(forwardV, UP);
 
+  auto &kb = *Window::GetKeyboard();
+
+  constexpr float baseSpeed = 1000.f;
+  float speed = baseSpeed * dt;
+
+  phys.AddForce(forwardV * forward * speed);
+  phys.AddForce(rightV * sidestep * speed);
+
+  ClientPacket input = CreateInputPacket();
+  Input(dt, input, true);
+}
+
+void Player::Input(float dt, ClientPacket input, bool skipPosRot) {
   auto &phys = *GetPhysicsObject();
 
   Bitflag<Actions> flags(input.actions);
 
-  constexpr float baseSpeed = 1000.f;
+  if (!skipPosRot) {
+    auto pos = GetTransform().GetPosition();
+    pos.x = input.pos[0];
+    pos.y = input.pos[1];
+    pos.z = input.pos[2];
+    GetTransform().SetPosition(pos);
 
-  float speed = baseSpeed * dt;
+    float xRot = static_cast<float>(input.rot[0]) / ORIENTATION_DELTA_SCALE;
+    float yRot = static_cast<float>(input.rot[1]) / ORIENTATION_DELTA_SCALE;
 
-  if (flags.has(Actions::MoveForward)) {
-    phys.AddForce(forward * speed);
+    camera.SetYaw(yRot);
+    camera.SetPitch(xRot);
   }
 
-  if (flags.has(Actions::MoveBackward)) {
-    phys.AddForce(-forward * speed);
-  }
-
-  if (flags.has(Actions::MoveLeft)) {
-    phys.AddForce(-right * speed);
-  }
-
-  if (flags.has(Actions::MoveRight)) {
-    phys.AddForce(right * speed);
-  }
-
+  constexpr Vector3 UP{0, 1, 0};
   if (flags.has(Actions::Jump) && world->IsOnGround(this)) {
     phys.ApplyLinearImpulse(UP * 50.0f);
   }
@@ -126,4 +162,72 @@ void Player::OnCollisionBegin(GameObject *otherObject) {
     Reset();
   }
 }
+
+ClientPacket Player::CreateInputPacket() {
+  Bitflag<Player::Actions> actions;
+
+  auto &kb = *Window::GetKeyboard();
+
+  if (kb.KeyDown(KeyCodes::SPACE))
+    actions.set(Player::Actions::Jump);
+
+  bool shiftDown = kb.KeyDown(KeyCodes::SHIFT);
+  bool ctrlDown = kb.KeyDown(KeyCodes::CONTROL);
+
+  bool attaching = !shiftDown && !ctrlDown;
+  bool extending = !shiftDown && ctrlDown;
+  bool retracting = !ctrlDown && shiftDown;
+  bool detaching = shiftDown && ctrlDown;
+
+  if (kb.KeyDown(KeyCodes::NUM1) && attaching)
+    actions.set(Player::Actions::AttachFrontLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM2) && attaching)
+    actions.set(Player::Actions::AttachFrontRightCorner);
+  if (kb.KeyDown(KeyCodes::NUM3) && attaching)
+    actions.set(Player::Actions::AttachBackLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM4) && attaching)
+    actions.set(Player::Actions::AttachBackRightCorner);
+
+  if (kb.KeyDown(KeyCodes::NUM1) && extending)
+    actions.set(Player::Actions::ExtendFrontLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM2) && extending)
+    actions.set(Player::Actions::ExtendFrontRightCorner);
+  if (kb.KeyDown(KeyCodes::NUM3) && extending)
+    actions.set(Player::Actions::ExtendBackLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM4) && extending)
+    actions.set(Player::Actions::ExtendBackRightCorner);
+
+  if (kb.KeyDown(KeyCodes::NUM1) && retracting)
+    actions.set(Player::Actions::RetractFrontLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM2) && retracting)
+    actions.set(Player::Actions::RetractFrontRightCorner);
+  if (kb.KeyDown(KeyCodes::NUM3) && retracting)
+    actions.set(Player::Actions::RetractBackLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM4) && retracting)
+    actions.set(Player::Actions::RetractBackRightCorner);
+
+  if (kb.KeyDown(KeyCodes::NUM1) && detaching)
+    actions.set(Player::Actions::DetachFrontLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM2) && detaching)
+    actions.set(Player::Actions::DetachFrontRightCorner);
+  if (kb.KeyDown(KeyCodes::NUM3) && detaching)
+    actions.set(Player::Actions::DetachBackLeftCorner);
+  if (kb.KeyDown(KeyCodes::NUM4) && detaching)
+    actions.set(Player::Actions::DetachBackRightCorner);
+
+  ClientPacket p;
+  p.actions = actions.flags;
+
+  p.rot[0] = static_cast<int16_t>(camera.GetPitch() * ORIENTATION_DELTA_SCALE);
+  p.rot[1] = static_cast<int16_t>(camera.GetYaw() * ORIENTATION_DELTA_SCALE);
+
+  auto pos = GetTransform().GetPosition();
+
+  p.pos[0] = pos.x;
+  p.pos[1] = pos.y;
+  p.pos[2] = pos.z;
+
+  return p;
+}
+
 } // namespace NCL::CSC8503

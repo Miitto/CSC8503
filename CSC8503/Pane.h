@@ -14,6 +14,7 @@ public:
       : GameObject("Pane"), world(world), player(player) {
     GetTags().set(Tag::Pane);
 
+    // -2 since no client will get it. -1 may be the host client
     networkObject = new NCL::CSC8503::NetworkObject(*this, -2);
   }
 

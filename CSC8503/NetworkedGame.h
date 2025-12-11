@@ -16,6 +16,9 @@ public:
 
   void UpdateGame(float dt) override;
 
+  Player *SpawnPlayer(int id) override;
+  void RemovePlayer(int id) override;
+
   void Clear() override {
     networkObjects.clear();
     TutorialGame::Clear();

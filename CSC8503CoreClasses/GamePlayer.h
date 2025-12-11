@@ -7,9 +7,11 @@
 namespace NCL::CSC8503 {
 class GamePlayer : public GameObject {
 public:
-  GamePlayer(int id) : id(id) { GetTags().set(Tag::Player); }
+  GamePlayer(int id) : GameObject("Player"), id(id) {
+    GetTags().set(Tag::Player);
+  }
 
-  virtual void Input(float dt, ClientPacket input) = 0;
+  virtual void Input(float dt, ClientPacket input, bool skipPosRot = false) = 0;
 
   const int GetId() const { return id; }
 

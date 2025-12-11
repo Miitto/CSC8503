@@ -26,6 +26,9 @@ public:
   virtual void UpdateServer();
   ENetPeer *GetPeer(int id);
 
+  virtual void OnClientConnect(int clientID) {}
+  virtual void OnClientDisconnect(int clientID) {}
+
 protected:
   uint16_t port;
   int clientMax;

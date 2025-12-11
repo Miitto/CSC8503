@@ -25,6 +25,9 @@ public:
            packet.type == BasicNetworkMessages::Full_State;
   }
 
+  GameObject &GetObject() { return object; }
+  const GameObject &GetObject() const { return object; }
+
 protected:
   NetworkState &GetLatestNetworkState();
 

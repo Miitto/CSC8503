@@ -1,5 +1,7 @@
 #include "NetworkObject.h"
 #include "./enet/enet.h"
+#include "VectorFormat.h"
+
 using namespace NCL;
 using namespace CSC8503;
 
@@ -69,6 +71,14 @@ bool NetworkObject::ReadFullPacket(FullPacket &p) {
       .SetOrientation(lastFullState.orientation);
 
   stateHistory.push_back(lastFullState);
+
+  NET_TRACE(
+      "NetworkObject {} ({}) received full state ID {}\nPos: {} | Rot: ({}, "
+      "{}, {}, {})",
+      networkID, object.GetName(), lastFullState.stateID,
+      lastFullState.position, lastFullState.orientation.x,
+      lastFullState.orientation.y, lastFullState.orientation.z,
+      lastFullState.orientation.w);
 
   return true;
 }
