@@ -20,9 +20,6 @@ using ClientId = int;
 struct NetworkClient {
   ENetPeer *peer;
   ClientId clientID; // Duplicate of peer ID for convenience
-  Player *playerObj;
-  std::chrono::steady_clock::time_point lastInputTime =
-      std::chrono::high_resolution_clock::now();
   int lastReceivedStateID;
 };
 
@@ -100,7 +97,8 @@ protected:
 
 class ServerCore : public PacketReceiver, public GameServer {
 public:
-  ServerCore(uint16_t port, int maxClients, NetworkedGame &game);
+  ServerCore(uint16_t port, int maxClients, NetworkedGame &game,
+             GameWorld *world);
   ~ServerCore() {
     SendGlobalPacket(GamePacket(BasicNetworkMessages::Shutdown));
   }
@@ -115,25 +113,16 @@ public:
   const ClientDir &GetClients() const { return clients; }
 
   void OnLevelUpdate(Level level);
-  void OnLevelEnd();
 
   Level &GetCurrentLevel() { return currentLevel; }
 
   Player *SpawnHostPlayer() {
     Player *player = game.SpawnPlayer(-1);
-    clients.insert(NetworkClient{.peer = nullptr,
-                                 .clientID = -1,
-                                 .playerObj = player,
-                                 .lastReceivedStateID = -1});
+    clients.insert(NetworkClient{
+        .peer = nullptr, .clientID = -1, .lastReceivedStateID = -1});
     SendGlobalPacket(PlayerConnectedPacket(-1));
 
     return player;
-  }
-
-  Player *GetClientPlayer(ClientId clientID) {
-    if (!clients.contains(clientID))
-      return nullptr;
-    return clients.get(clientID).playerObj;
   }
 
   void OnClientDisconnect(ClientId clientID) override {

@@ -13,8 +13,10 @@
 #include <vector>
 
 namespace NCL::CSC8503 {
-ServerCore::ServerCore(uint16_t port, int maxClients, NetworkedGame &game)
+ServerCore::ServerCore(uint16_t port, int maxClients, NetworkedGame &game,
+                       GameWorld *world)
     : GameServer(port, maxClients), game(game) {
+  gameWorld = world;
   LOG("Server Core starting on port {}", port);
   RegisterPacketHandler(GamePacketType(BasicNetworkMessages::PlayerState),
                         this);
@@ -51,13 +53,13 @@ void ServerCore::ReceivePacket(GamePacketType type, GamePacket *payload,
 
     SendGlobalPacket(input);
 
-    auto &client = clients.get(source);
-    if (client.playerObj) {
-      auto now = std::chrono::high_resolution_clock::now();
-      auto deltaTime =
-          std::chrono::duration<float>(now - client.lastInputTime).count();
-      client.lastInputTime = now;
-      client.playerObj->Input(deltaTime, input);
+    GamePlayer *gplayer = gameWorld->GetPlayer(source);
+    if (gplayer) {
+      Player *player = static_cast<Player *>(gplayer);
+      float dt = player->GetInputDeltaTime();
+      player->Input(dt, input);
+    } else {
+      NET_WARN("Received PlayerState from unknown player ID {}", source);
     }
     break;
   }
@@ -76,7 +78,6 @@ void ServerCore::ReceivePacket(GamePacketType type, GamePacket *payload,
     Player *player = game.SpawnPlayer(source);
     clients.insert(NetworkClient{.peer = GetPeer(source),
                                  .clientID = source,
-                                 .playerObj = player,
                                  .lastReceivedStateID = -1});
     SendGlobalPacket(PlayerConnectedPacket(source));
     SendPacketToClient(source, HelloPacket(source));
@@ -149,17 +150,7 @@ void ServerCore::OnLevelUpdate(Level level) {
   for (auto &player : clients) {
     if (player.first == -1)
       continue;
-    player.second.playerObj = game.SpawnPlayer(player.first);
-    player.second.lastInputTime = std::chrono::high_resolution_clock::now();
+    game.SpawnPlayer(player.first);
   }
 }
-
-void ServerCore::OnLevelEnd() {
-  NET_INFO("Level ended on server.");
-  for (auto &player : clients) {
-    player.second.playerObj = nullptr;
-    player.second.lastReceivedStateID = -1;
-  }
-}
-
 } // namespace NCL::CSC8503

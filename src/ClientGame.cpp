@@ -46,7 +46,7 @@ void ClientGame::Disconnect() {
 }
 
 void ClientGame::InitServer(uint16_t port, int maxClients) {
-  serverNet.emplace(port, maxClients, *this);
+  serverNet.emplace(port, maxClients, *this, &world);
 }
 
 void ClientGame::ShutdownServer() { serverNet = std::nullopt; }
@@ -116,6 +116,7 @@ void ClientGame::StartLevel(Level level) {
     NET_WARN("Unknown level requested: {}", static_cast<int>(level));
     return;
   }
+  inLevel = true;
 
   if (!serverNet) {
     player = SpawnPlayer(ourPlayerId);
@@ -136,8 +137,7 @@ void ClientGame::StartLevel(Level level) {
 
   for (auto &obj : world) {
     NCL::CSC8503::NetworkObject *netObj = obj->GetNetworkObject();
-    if (netObj && std::find(networkObjects.begin(), networkObjects.end(),
-                            netObj) == networkObjects.end()) {
+    if (netObj) {
       DEBUG("Syncing object {}", obj->GetName());
       networkObjects.push_back(netObj);
     }
@@ -156,14 +156,9 @@ void ClientGame::EndLevel() {
     break;
   }
 
-  if (serverNet) {
-    TutorialGame::EndLevel();
-    serverNet->OnLevelEnd();
-    serverNet->OnLevelUpdate(nextLevel);
-  } else if (!net) {
-    TutorialGame::EndLevel();
-    SelectLevel(nextLevel);
-  }
+  TutorialGame::EndLevel();
+
+  SelectLevel(nextLevel);
 }
 
 void ClientGame::UpdateGame(float dt) {
@@ -232,6 +227,7 @@ void ClientGame::ReceivePacket(GamePacketType type, GamePacket *payload,
   }
   case BasicNetworkMessages::Shutdown: {
     NET_INFO("Server has shutdown the connection.");
+    Clear();
     break;
   }
   case BasicNetworkMessages::Hello: {

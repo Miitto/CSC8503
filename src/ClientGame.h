@@ -89,6 +89,14 @@ public:
   void ReceivePacket(GamePacketType type, GamePacket *payload,
                      int source) override;
 
+  bool InLevel() const { return inLevel; }
+
+  void Clear() override {
+    inLevel = false;
+    connectedPlayers.clear();
+    NetworkedGame::Clear();
+  }
+
 protected:
   void NetworkUpdate(float dt) override;
 
@@ -97,6 +105,8 @@ protected:
   void StartLevel(Level level);
 
   int lastFullSync = 0;
+
+  bool inLevel = false;
 
   std::optional<PingInfo> pingInfo = std::nullopt;
 

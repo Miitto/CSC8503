@@ -169,13 +169,22 @@ void TutorialGame::InitLvlOne() {
     AddCubeToWorld(floor.position, floor.scale, 0.0f);
   }
 
+  constexpr Vector3 cubePositions[] = {
+      {20, 5, 0}, {31, 5, -9}, {53, 5, -9}, {64, 5, 0}};
+  for (int i = 0; i < 4; ++i) {
+    GameObject *cube = AddCubeToWorld(cubePositions[i], Vector3(2, 2, 2), .5f);
+    cube->Sync(i + 50);
+  }
+
   AddLevelEndToWorld(Vector3(84, 5, 0), Vector3(5, 5, 5));
 
   GameObject *pendulumAttachment =
       AddCubeToWorld({42, 50, -18}, {5, 2, 5}, 0.0f);
   GameObject *pendulum = AddSphereToWorld({42, 50, -70}, 5.0f, 0.0001f);
+  pendulum->SetName("Pendulum");
   pendulum->GetPhysicsObject()->GetMaterial().SetLinearDamping(0);
   pendulum->GetPhysicsObject()->SetAxisLocks(PhysicsObject::AxisLock::LinearX);
+  pendulum->Sync(300);
   world.AddConstraint(new TiedConstraint(pendulumAttachment, pendulum, 44));
 }
 

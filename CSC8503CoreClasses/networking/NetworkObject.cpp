@@ -1,6 +1,7 @@
 #include "NetworkObject.h"
 #include "./enet/enet.h"
 #include "VectorFormat.h"
+#include "physics/PhysicsObject.h"
 
 using namespace NCL;
 using namespace CSC8503;
@@ -36,8 +37,15 @@ bool NetworkObject::WritePacket(GamePacket **p, bool deltaFrame, int stateID) {
 }
 // Client objects recieve these packets
 bool NetworkObject::ReadDeltaPacket(DeltaPacket &p) {
-  if (p.fullID != lastFullState.stateID)
+  if (p.objectID != networkID)
     return false;
+
+  if (p.fullID != lastFullState.stateID) {
+    NET_WARN("NetworkObject {} ({}) delta packet out of order: expected fullID "
+             "{} got {}",
+             networkID, object.GetName(), lastFullState.stateID, p.fullID);
+    return false;
+  }
 
   UpdateStateHistory(p.fullID);
 
@@ -61,14 +69,28 @@ bool NetworkObject::ReadDeltaPacket(DeltaPacket &p) {
 }
 
 bool NetworkObject::ReadFullPacket(FullPacket &p) {
-  if (p.fullState.stateID < lastFullState.stateID)
+  if (p.objectID != networkID)
     return false;
+
+  if (p.fullState.stateID < lastFullState.stateID) {
+    NET_WARN("NetworkObject {} ({}) full packet out of order: expected "
+             "stateID >= {} got {}",
+             networkID, object.GetName(), lastFullState.stateID,
+             p.fullState.stateID);
+    return false;
+  }
 
   lastFullState = p.fullState;
 
   object.GetTransform()
       .SetPosition(lastFullState.position)
       .SetOrientation(lastFullState.orientation);
+
+  PhysicsObject *phys = object.GetPhysicsObject();
+
+  if (phys) {
+    phys->SetLinearVelocity(lastFullState.velocity);
+  }
 
   stateHistory.push_back(lastFullState);
 
@@ -117,6 +139,14 @@ bool NetworkObject::WriteFullPacket(GamePacket **p) {
   f.objectID = networkID;
   f.fullState.position = object.GetTransform().GetPosition();
   f.fullState.orientation = object.GetTransform().GetOrientation();
+
+  PhysicsObject *phys = object.GetPhysicsObject();
+  if (phys) {
+    f.fullState.velocity = phys->GetLinearVelocity();
+  } else {
+    f.fullState.velocity = {};
+  }
+
   f.fullState.stateID = lastFullState.stateID++;
 
   *p = new FullPacket(f);

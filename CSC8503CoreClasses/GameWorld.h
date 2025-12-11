@@ -85,7 +85,7 @@ public:
 
   GamePlayer *GetPlayer(int id) {
     if (players.find(id) != players.end()) {
-      return players[id];
+      return players.at(id);
     }
     return nullptr;
   }
@@ -140,9 +140,9 @@ public:
   const PathfindingService &pathfind() const { return pathfinding; }
 
 protected:
-  std::vector<GameObject *> gameObjects;
-  std::map<int, GamePlayer *> players;
-  std::vector<Constraint *> constraints;
+  std::vector<GameObject *> gameObjects = {};
+  std::map<int, GamePlayer *> players = {};
+  std::vector<Constraint *> constraints = {};
 
   PerspectiveCamera *mainCamera;
 

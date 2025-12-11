@@ -18,6 +18,10 @@ public:
       return Push;
     }
 
+    if (!game.InLevel()) {
+      return Pop;
+    }
+
     return NoChange;
   }
 

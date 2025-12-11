@@ -14,6 +14,7 @@ public:
                           NCL::CSC8503::PushdownState **newState) override {
     if (nextState != nullptr) {
       *newState = nextState;
+      nextState = nullptr;
       return Push;
     }
 

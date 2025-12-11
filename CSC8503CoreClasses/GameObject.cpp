@@ -17,6 +17,8 @@ GameObject::~GameObject() {
   delete networkObject;
 }
 
+void GameObject::Sync(int id) { networkObject = new NetworkObject(*this, id); }
+
 void GameObject::Reset() {
   transform = resetTransform;
   if (physicsObject) {

@@ -22,8 +22,8 @@ public:
   };
 
   struct PhysicsMaterial {
-    float linearDamping = 0.8f;
-    float angularDamping = 0.8f;
+    float linearDamping = 0.5f;
+    float angularDamping = 0.5f;
 
     PhysicsMaterial &SetLinearDamping(float damping) {
       linearDamping = damping == 0.0f ? 1.0f : 1.0f / damping;

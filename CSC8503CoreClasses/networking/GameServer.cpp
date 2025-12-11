@@ -21,6 +21,7 @@ GameServer::~GameServer() { Shutdown(); }
 
 void GameServer::Shutdown() {
   SendGlobalPacket(GamePacket(BasicNetworkMessages::Shutdown));
+  UpdateServer(); // Ensure packet is sent before destroying host
   enet_host_destroy(netHandle);
   netHandle = nullptr;
   NET_INFO("Server shutdown on port {}", port);

@@ -56,7 +56,9 @@ public:
 
   void SetPhysicsObject(PhysicsObject *newObject) { physicsObject = newObject; }
 
+  void Sync(int id);
   const std::string &GetName() const { return name; }
+  void SetName(const std::string &newName) { name = newName; }
 
   virtual void OnCollisionBegin(GameObject *otherObject) {
     // std::cout << "OnCollisionBegin event occured!\n";
